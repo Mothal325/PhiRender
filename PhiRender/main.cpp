@@ -13,10 +13,93 @@
 #define LINEW 0.0075f
 #define BGMSPEED 1.0f
 
+struct HitEffect
+{
+	float x = 0, y = 0;
+	float hittime = 0;
+	float duration = 0.5;
+
+	void Init(float Lx, float Ly, float Lr, float xPos, float time)
+	{
+		float theta = Lr / 180.0 * PI;
+		x = cosf(theta) * xPos * OFF_X * SW + Lx * SW;
+		y = sinf(theta) * xPos * OFF_X * SW + Ly * SH;
+		y = SH - y;
+		hittime = time;
+	}
+
+	void Draw(float time)
+	{
+		float rt = time - hittime;
+		float size = (1.0f - powf((duration - rt) / duration, 3.0f)) * NW;
+		unsigned char alpha = fmaxf(0.0f, 255.0f * (duration - rt) / duration);
+		DrawRectangle(x - size / 2, y - size / 2, size, size, {255, 204, 48, alpha });
+	}
+};
+
+struct HoldingHold
+{
+	float positionX;
+	int lineid;
+	int hittime;
+	int holdtime;
+	int count;
+	bool holding;
+
+	void Init(OFF::Notedata data)
+	{
+		positionX = data.note.positionX;
+		lineid = data.lineid;
+		hittime = data.note.time;
+		holdtime = data.note.holdTime;
+		count = 1;
+		holding = true;
+	}
+};
+
 Texture Tclick, Tclick_mh, Tdrag, Tdrag_mh, Tflick, Tflick_mh, Thold, Thold_mh;
 Sound Sclick, Sdrag, Sflick;
 std::vector<Sound> Snotes;
+std::vector<HitEffect> Effects;
+std::vector<HoldingHold> Holds;
 int holdAtlas[2] = { 50, 50 }, holdAtlasMH[2] = { 50, 50 };
+
+void DrawHitEffect(float time)
+{
+	for (HitEffect effect : Effects)
+	{
+		effect.Draw(time);
+	}
+
+	Effects.erase(std::remove_if(Effects.begin(), Effects.end(),
+		[&time](const HitEffect &e) {return time - e.hittime > e.duration; }), Effects.end());
+}
+
+void UpdateHoldHitEffect(std::vector<OFF::Linedata> data, float time)
+{
+	for (int i = 0; i < Holds.size(); i++)
+	{
+		int id = Holds[i].lineid;
+		float dt = OFF_T / data[id].bpm;
+		float hittime = Holds[i].hittime * dt;
+		float holdtime = Holds[i].holdtime * dt;
+		if (time - hittime >= holdtime)
+		{
+			Holds[i].holding = false;
+			continue;
+		}
+		if (time - hittime >= Holds[i].count * dt * 16)
+		{
+			HitEffect effect;
+			effect.Init(data[id].x, data[id].y, data[id].r, Holds[i].positionX, time);
+			Effects.push_back(effect);
+			Holds[i].count++;
+		}
+	}
+
+	Holds.erase(std::remove_if(Holds.begin(), Holds.end(),
+		[](HoldingHold& h) {return !h.holding; }), Holds.end());
+}
 
 void InitNoteSound(std::vector<OFF::Notedata> notedata)
 {
@@ -121,6 +204,7 @@ std::vector<OFF::Notedata> ReadNotedata(OFF::Chartdata data)
 			}
 		}
 	}
+	
 	return notedata;
 }
 
@@ -141,6 +225,15 @@ int DrawOFFNote(std::vector<OFF::Notedata> &notedata, std::vector<OFF::Linedata>
 			{
 				notedata[i].isPlayed = true;
 				PlaySound(Snotes[i]);
+				HitEffect effect;
+				effect.Init(data[id].x, data[id].y, data[id].r, note.positionX, time);
+				Effects.push_back(effect);
+				if (note.type == 3)
+				{
+					HoldingHold hold;
+					hold.Init(notedata[i]);
+					Holds.push_back(hold);
+				}
 			}
 			if (note.type != 3)
 			{
@@ -160,7 +253,9 @@ int DrawOFFNote(std::vector<OFF::Notedata> &notedata, std::vector<OFF::Linedata>
 			lx = note.positionX * OFF_X * SW;
 			ly = d * OFF_Y * SH * (updown ? -1.0 : 1.0) * (note.type == 3 ? 1.0 : note.speed);
 			if (note.time < t && t <= note.time + note.holdTime)
+			{
 				ly = 0;
+			}
 			theta = data[id].r / 180.0 * PI;
 			x = cosf(theta) * lx - sinf(theta) * ly + data[id].x * SW;
 			y = sinf(theta) * lx + cosf(theta) * ly + data[id].y * SH;
@@ -234,18 +329,18 @@ void DrawOFFJudgeLine(OFF::judgeLine line, float time, OFF::Linedata &data)
 int main(void)
 {
 	std::string chartname, songname, backgroundname;
-	printf("谱面文件名：");
+	printf("谱面文件路径：");
 	std::getline(std::cin, chartname);
 	
 	OFF::Chartdata data = OFF::Readdata(chartname.c_str());
 	std::vector<OFF::Notedata> notedata = ReadNotedata(data);
 
-	printf("音频文件名：");
+	printf("音频文件路径：");
 	std::getline(std::cin, songname);
 	InitAudioDevice();
 	Music bgm = LoadMusicStream(songname.c_str());
 
-	printf("背景文件名：");
+	printf("背景文件路径：");
 	std::getline(std::cin, backgroundname);
 
 	SetTraceLogLevel(LOG_NONE);
@@ -349,10 +444,13 @@ int main(void)
 		hitnum = DrawOFFNote(notedata, linedata, playtime, true);
 		hitnum = DrawOFFNote(notedata, linedata, playtime, false);
 
+		UpdateHoldHitEffect(linedata, playtime);
+		DrawHitEffect(playtime);
+
 		sprintf_s(timetext, "Time:%.1f/%.1f\nFPS:%d", GetMusicTimePlayed(bgm), GetMusicTimeLength(bgm), GetFPS());
 		sprintf_s(combotext, "%d", hitnum);
 		sprintf_s(scoretext, "%07d", (int)((double)hitnum / notenum * 1000000.0 + 0.5));
-		DrawTextEx(Phifont_s, timetext, {0.0f, 0.0f}, SH * 0.025f, 0.0f, WHITE);
+		DrawTextEx(Phifont_s, timetext, { 0.0f, 0.0f }, SH * 0.025f, 0.0f, WHITE);
 		DrawTextEx(Phifont_l, combotext, { (SW - MeasureTextEx(Phifont_l, combotext, SH * 0.075f, 0).x) / 2.0f, SH * 0.015f }, SH * 0.075f, 0.0f, WHITE);
 		DrawTextEx(Phifont_s, "COMBO", { (SW - MeasureTextEx(Phifont_s, "COMBO", SH * 0.025f, 0).x) / 2.0f, SH * 0.1f }, SH * 0.025f, 0.0f, WHITE);
 		DrawTextEx(Phifont_m, scoretext, { (float)SW - MeasureTextEx(Phifont_m, scoretext, SH * 0.05f, 0.72f).x - SH * 0.04f, SH * 0.03f }, SH * 0.05f, 0.72f, WHITE);
