@@ -1,62 +1,45 @@
-﻿#include <stdio.h>
-#include <stdlib.h>
+﻿#include <iostream>
+#include <fstream>
+#include <string>
+#include <nlohmann/json.hpp>
 #include <vector>
-#include "cJSON.h"
 #include "offchart.h"
 
 using namespace OFF;
+using json = nlohmann::json;
 
-void Readnote(cJSON* arr, std::vector<Note>& note)
+void Readnote(const json& data, std::vector<Note>& note)
 {
-	int size = cJSON_GetArraySize(arr);
-	cJSON* arr_item, * item;
-	for (int i = 0; i < size; i++)
+	for (int i = 0; i < data.size(); i++)
 	{
-		arr_item = cJSON_GetArrayItem(arr, i);
-		item = cJSON_GetObjectItem(arr_item, "type");
-		note[i].type = cJSON_GetNumberValue(item);
-		item = cJSON_GetObjectItem(arr_item, "time");
-		note[i].time = cJSON_GetNumberValue(item);
-		item = cJSON_GetObjectItem(arr_item, "positionX");
-		note[i].positionX = cJSON_GetNumberValue(item);
-		item = cJSON_GetObjectItem(arr_item, "holdTime");
-		note[i].holdTime = cJSON_GetNumberValue(item);
-		item = cJSON_GetObjectItem(arr_item, "speed");
-		note[i].speed = cJSON_GetNumberValue(item);
-		item = cJSON_GetObjectItem(arr_item, "floorPosition");
-		note[i].floorPosition = cJSON_GetNumberValue(item);
+		note[i].type = data[i]["type"];
+		note[i].time = data[i]["time"];
+		note[i].positionX = data[i]["positionX"];
+		note[i].holdTime = data[i]["holdTime"];
+		note[i].speed = data[i]["speed"];
+		note[i].floorPosition = data[i]["floorPosition"];
 	}
 }
 
-void Readevent(cJSON* arr, std::vector<Event>& event, int mode)	//mode: speed 0, move 1, another 2
+void Readevent(const json& data, std::vector<Event>& event, int mode)	//mode: speed 0, move 1, another 2
 {
-	int size = cJSON_GetArraySize(arr);
-	cJSON* arr_item, * item;
-	for (int i = 0; i < size; i++)
+	for (int i = 0; i < data.size(); i++)
 	{
-		arr_item = cJSON_GetArrayItem(arr, i);
-		item = cJSON_GetObjectItem(arr_item, "startTime");
-		event[i].startTime = cJSON_GetNumberValue(item);
-		item = cJSON_GetObjectItem(arr_item, "endTime");
-		event[i].endTime = cJSON_GetNumberValue(item);
+		event[i].startTime = data[i]["startTime"];
+		event[i].endTime = data[i]["endTime"];
 		if (mode == 0)
 		{
-			item = cJSON_GetObjectItem(arr_item, "value");
-			event[i].start = cJSON_GetNumberValue(item);
+			event[i].start = data[i]["value"];
 		}
 		else
 		{
-			item = cJSON_GetObjectItem(arr_item, "start");
-			event[i].start = cJSON_GetNumberValue(item);
-			item = cJSON_GetObjectItem(arr_item, "end");
-			event[i].end = cJSON_GetNumberValue(item);
+			event[i].start = data[i]["start"];
+			event[i].end = data[i]["end"];
 		}
 		if (mode == 1)
 		{
-			item = cJSON_GetObjectItem(arr_item, "start2");
-			event[i].start2 = cJSON_GetNumberValue(item);
-			item = cJSON_GetObjectItem(arr_item, "end2");
-			event[i].end2 = cJSON_GetNumberValue(item);
+			event[i].start2 = data[i]["start2"];
+			event[i].end2 = data[i]["end2"];
 		}
 	}
 }
@@ -75,123 +58,72 @@ void CalculateFloor(judgeLine& line)
 	}
 }
 
-Chartdata OFF::Readdata(const char* filename)
+Chartdata OFF::Readdata(std::string filename)
 {
-	FILE* fp;
-	//打开文件
-	fopen_s(&fp, filename, "r");
-	if (fp == nullptr)
+	std::ifstream file(filename);
+	if (!file.is_open())
 	{
-		printf("文件打不开喵\n");
+		std::cerr << "文件打不开喵\n";
 		exit(-1);
 	}
-	//确定文件大小
-	_fseeki64(fp, 0, SEEK_END);
-	__int64 filesize = _ftelli64(fp);
-	_fseeki64(fp, 0, SEEK_SET);
-	if (filesize == 0)
+	json data;
+	try
 	{
-		printf("文件有问题喵\n");
+		file >> data;
+	}
+	catch (const json::parse_error& e)
+	{
+		std::cerr << "JSON 解析错误喵：" << e.what() << std::endl;
 		exit(-1);
 	}
-	//读取文件内容
-	char* data = (char*)malloc(filesize * sizeof(char));
-	if (data == nullptr)
-	{
-		printf("data内存申请失败喵\n");
-		exit(-1);
-	}
-	fread_s(data, filesize, sizeof(char), filesize, fp);
-	fclose(fp);
-	cJSON* root = cJSON_Parse(data);
-	free(data);
-	if (root == nullptr)
-	{
-		printf("JSON解析错误喵\n");
-		exit(-1);
-	}
-	//解析
 	Chartdata chartdata;
-	cJSON* arr1, * arr2;
-	int arr_size1, arr_size2;
-	cJSON* arr_item1, * arr_item2;
-	cJSON* item1;
 	int event_sum = 0, note_sum = 0;
 	//基础信息
-	item1 = cJSON_GetObjectItem(root, "formatVersion");
-	chartdata.formatVersion = cJSON_GetNumberValue(item1);
-	item1 = cJSON_GetObjectItem(root, "offset");
-	chartdata.offset = cJSON_GetNumberValue(item1);
+	chartdata.formatVersion = data["formatVersion"];
+	chartdata.offset = data["offset"];
 	//judgeLineList
-	printf("正在读取judgeLineList\n");
-	arr1 = cJSON_GetObjectItem(root, "judgeLineList");
-	arr_size1 = cJSON_GetArraySize(arr1);
-	chartdata.lines.resize(arr_size1);
-	for (int i = 0; i < arr_size1; i++)
+	std::cout << "正在读取judgeLineList\n";
+	chartdata.lines.resize(data["judgeLineList"].size());
+	for (int i = 0; i < data["judgeLineList"].size(); i++)
 	{
-		printf("%d\n", i);
-		arr_item1 = cJSON_GetArrayItem(arr1, i);
-		item1 = cJSON_GetObjectItem(arr_item1, "bpm");
-		chartdata.lines[i].bpm = cJSON_GetNumberValue(item1);
-		arr2 = cJSON_GetObjectItem(arr_item1, "notesAbove");
-		arr_size2 = cJSON_GetArraySize(arr2);
-		printf("\tnotesAbove %d ", arr_size2);
-		note_sum += arr_size2;
-		chartdata.lines[i].notesAbove.resize(arr_size2);
-		Readnote(arr2, chartdata.lines[i].notesAbove);
-		arr2 = cJSON_GetObjectItem(arr_item1, "notesBelow");
-		arr_size2 = cJSON_GetArraySize(arr2);
-		printf("notesBelow %d\n", arr_size2);
-		note_sum += arr_size2;
-		chartdata.lines[i].notesBelow.resize(arr_size2);
-		Readnote(arr2, chartdata.lines[i].notesBelow);
-		arr2 = cJSON_GetObjectItem(arr_item1, "speedEvents");
-		arr_size2 = cJSON_GetArraySize(arr2);
-		printf("\tspeedEvent %d\n", arr_size2);
-		event_sum += arr_size2;
-		chartdata.lines[i].speedEvents.resize(arr_size2);
-		Readevent(arr2, chartdata.lines[i].speedEvents, 0);
-		chartdata.lines[i].floorEvents.resize(arr_size2);
+		json jl = data["judgeLineList"][i];
+		std::cout << i << "\n";
+		chartdata.lines[i].bpm = jl["bpm"];
+		//notesAbove
+		std::cout << "\tnotesAbove " << jl["notesAbove"].size() << "\n";
+		note_sum += jl["notesAbove"].size();
+		chartdata.lines[i].notesAbove.resize(jl["notesAbove"].size());
+		Readnote(jl["notesAbove"], chartdata.lines[i].notesAbove);
+		//notesBelow
+		std::cout << "\tnotesBelow " << jl["notesBelow"].size() << "\n";
+		note_sum += jl["notesBelow"].size();
+		chartdata.lines[i].notesBelow.resize(jl["notesBelow"].size());
+		Readnote(jl["notesBelow"], chartdata.lines[i].notesBelow);
+		//speedEvent
+		std::cout << "\tspeedEvent " << jl["speedEvents"].size() << "\n";
+		event_sum += jl["speedEvents"].size();
+		chartdata.lines[i].speedEvents.resize(jl["speedEvents"].size());
+		Readevent(jl["speedEvents"], chartdata.lines[i].speedEvents, 0);
+		chartdata.lines[i].floorEvents.resize(jl["speedEvents"].size());
 		CalculateFloor(chartdata.lines[i]);
-		arr2 = cJSON_GetObjectItem(arr_item1, "judgeLineMoveEvents");
-		arr_size2 = cJSON_GetArraySize(arr2);
-		printf("\tmoveEvents %d\n", arr_size2);
-		event_sum += arr_size2;
-		chartdata.lines[i].moveEvents.resize(arr_size2);
-		Readevent(arr2, chartdata.lines[i].moveEvents, 1);
-		arr2 = cJSON_GetObjectItem(arr_item1, "judgeLineRotateEvents");
-		arr_size2 = cJSON_GetArraySize(arr2);
-		printf("\trotateEvents %d\n", arr_size2);
-		event_sum += arr_size2;
-		chartdata.lines[i].rotateEvents.resize(arr_size2);
-		Readevent(arr2, chartdata.lines[i].rotateEvents, 1);
-		arr2 = cJSON_GetObjectItem(arr_item1, "judgeLineDisappearEvents");
-		arr_size2 = cJSON_GetArraySize(arr2);
-		printf("\tdisappearEvents %d\n", arr_size2);
-		event_sum += arr_size2;
-		chartdata.lines[i].disappearEvents.resize(arr_size2);
-		Readevent(arr2, chartdata.lines[i].disappearEvents, 1);
+		//moveEvents
+		std::cout << "\tmoveEvents " << jl["judgeLineMoveEvents"].size() << "\n";
+		event_sum += jl["judgeLineMoveEvents"].size();
+		chartdata.lines[i].moveEvents.resize(jl["judgeLineMoveEvents"].size());
+		Readevent(jl["judgeLineMoveEvents"], chartdata.lines[i].moveEvents, 1);
+		//rotateEvents
+		std::cout << "\trotateEvents " << jl["judgeLineRotateEvents"].size() << "\n";
+		event_sum += jl["judgeLineRotateEvents"].size();
+		chartdata.lines[i].rotateEvents.resize(jl["judgeLineRotateEvents"].size());
+		Readevent(jl["judgeLineRotateEvents"], chartdata.lines[i].rotateEvents, 2);
+		//disappearEvents
+		std::cout << "\tdisappearEvents " << jl["judgeLineDisappearEvents"].size() << "\n";
+		event_sum += jl["judgeLineDisappearEvents"].size();
+		chartdata.lines[i].disappearEvents.resize(jl["judgeLineDisappearEvents"].size());
+		Readevent(jl["judgeLineDisappearEvents"], chartdata.lines[i].disappearEvents, 2);
 	}
-
-	printf("event %d note %d\n", event_sum, note_sum);
-	cJSON_Delete(root);
-
+	std::cout << "event " << event_sum << "note " << note_sum << "\n";
 	return chartdata;
-}
-
-void OFF::Printdata(Chartdata data)
-{
-	printf("data:\n");
-	for (int i = 0; i < data.lines.size(); i++)
-	{
-		printf("line %d\n", i);
-		printf("noteA %llu\n", data.lines[i].notesAbove.size());
-		printf("noteB %llu\n", data.lines[i].notesBelow.size());
-		printf("event %llu\n", data.lines[i].disappearEvents.size() + \
-			data.lines[i].moveEvents.size() + \
-			data.lines[i].rotateEvents.size() + \
-			data.lines[i].speedEvents.size());
-	}
 }
 
 void OFF::FindLine(judgeLine line, float time, Linedata& data)

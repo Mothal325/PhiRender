@@ -2,31 +2,38 @@
 
 namespace RPE
 {
+	struct Beat
+	{
+		int beat;
+		int num;
+		int den;
+	};
+
 	struct BPMdata
 	{
 		float bpm;
-		int startTime[3];
+		Beat startTime;
 	};
 
 	struct META
 	{
 		int RPEVersion;
-		char* background;
-		char* charter;
-		char* composer;
-		char* id;
-		char* illustration;
-		char* level;
-		char* name;
 		int offset;
-		char* song;
+		std::string background;
+		std::string charter;
+		std::string composer;
+		std::string id;
+		std::string illustration;
+		std::string level;
+		std::string name;
+		std::string song;
 	};
 
 	struct Event
 	{
 		int easingType;
-		int startTime[3];
-		int endTime[3];
+		Beat startTime;
+		Beat endTime;
 		float start;
 		float end;
 		int linkgroup;
@@ -35,8 +42,8 @@ namespace RPE
 	struct colorEvent
 	{
 		int easingType;
-		int startTime[3];
-		int endTime[3];
+		Beat startTime;
+		Beat endTime;
 		unsigned char start[3];
 		unsigned char end[3];
 		int linkgroup;
@@ -69,14 +76,14 @@ namespace RPE
 		float yOffset;
 		int type;
 		float positionX;
-		int startTime[3];
-		int endTime[3];
+		Beat startTime;
+		Beat endTime;
 	};
 
 	struct judgeLine
 	{
-		char* Name;
-		char* Texture;
+		std::string Name;
+		std::string Texture;
 		float bpmfactor;
 		int isCover;
 		std::vector<eventLayer> eventLayers;
@@ -91,13 +98,6 @@ namespace RPE
 		std::vector<judgeLine> lines;
 	};
 
-	Chartdata Readdata(const char* filename);
+	Chartdata Readdata(std::string filename);
 
-	void Printdata(Chartdata data);	//bad
-
-	void AddLine(Chartdata* data);
-
-	void AddNote(Chartdata* data, int type, int line, int starttime[], int endtime[], int above, float speed, float positionX);	//above = 1 -> up, when down -> hold = 2, other = 0
-
-	void AddEvent(Chartdata* data, char* eventtype, int line, int starttime[], int endtime[], int start[], int end[], int easingtype);
 }

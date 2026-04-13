@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <vector>
 #include <string>
-#include <math.h>
+#include <cmath>
 #include <raylib.h>
 #include "rpechart.h"
 #include "offchart.h"
@@ -22,8 +22,8 @@ struct HitEffect
 	void Init(float Lx, float Ly, float Lr, float xPos, float time)
 	{
 		float theta = Lr / 180.0 * PI;
-		x = cosf(theta) * xPos * OFF_X * SW + Lx * SW;
-		y = sinf(theta) * xPos * OFF_X * SW + Ly * SH;
+		x = std::cos(theta) * xPos * OFF_X * SW + Lx * SW;
+		y = std::sin(theta) * xPos * OFF_X * SW + Ly * SH;
 		y = SH - y;
 		hittime = time;
 	}
@@ -257,8 +257,8 @@ int DrawOFFNote(std::vector<OFF::Notedata> &notedata, std::vector<OFF::Linedata>
 				ly = 0;
 			}
 			theta = data[id].r / 180.0 * PI;
-			x = cosf(theta) * lx - sinf(theta) * ly + data[id].x * SW;
-			y = sinf(theta) * lx + cosf(theta) * ly + data[id].y * SH;
+			x = std::cos(theta) * lx - std::sin(theta) * ly + data[id].x * SW;
+			y = std::sin(theta) * lx + std::cos(theta) * ly + data[id].y * SH;
 			float rotation = -data[id].r;
 			if (note.type != 3 && !renderhold)
 			{
@@ -329,18 +329,18 @@ void DrawOFFJudgeLine(OFF::judgeLine line, float time, OFF::Linedata &data)
 int main(void)
 {
 	std::string chartname, songname, backgroundname;
-	printf("谱面文件路径：");
+	std::cout << "谱面文件路径：";
 	std::getline(std::cin, chartname);
 	
-	OFF::Chartdata data = OFF::Readdata(chartname.c_str());
+	OFF::Chartdata data = OFF::Readdata(chartname);
 	std::vector<OFF::Notedata> notedata = ReadNotedata(data);
 
-	printf("音频文件路径：");
+	std::cout << "音频文件路径：";
 	std::getline(std::cin, songname);
 	InitAudioDevice();
 	Music bgm = LoadMusicStream(songname.c_str());
 
-	printf("背景文件路径：");
+	std::cout << "背景文件路径：";
 	std::getline(std::cin, backgroundname);
 
 	SetTraceLogLevel(LOG_NONE);

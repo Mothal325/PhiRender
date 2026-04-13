@@ -66,9 +66,7 @@ namespace OFF
 		bool isPlayed;
 	};
 
-	Chartdata Readdata(const char* filename);
+	Chartdata Readdata(std::string filename);
 
-	void Printdata(Chartdata data);	//bad
-
-	void FindLine(judgeLine line, float time, Linedata &data);
+	void FindLine(judgeLine line, float time, Linedata& data);
 }
