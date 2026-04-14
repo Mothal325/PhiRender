@@ -131,13 +131,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="cJSON.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="offchart.cpp" />
     <ClCompile Include="rpechart.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cJSON.h" />
     <ClInclude Include="offchart.h" />
     <ClInclude Include="rpechart.h" />
   </ItemGroup>

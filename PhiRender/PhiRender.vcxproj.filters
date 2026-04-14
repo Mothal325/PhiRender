@@ -18,9 +18,6 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="cJSON.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="offchart.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -30,9 +27,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rpechart.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="cJSON.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="offchart.h">
