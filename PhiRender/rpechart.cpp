@@ -139,6 +139,6 @@ Chartdata RPE::Readdata(std::string filename)
 		temp_line->notes.resize(jl["notes"].size());
 		Readnote(jl["notes"], temp_line->notes);
 	}
-	std::cout << "event " << event_sum << "note " << note_sum << "\n";
+	std::cout << "event " << event_sum << " note " << note_sum << "\n";
 	return chartdata;
 }

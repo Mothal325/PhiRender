@@ -122,7 +122,7 @@ Chartdata OFF::Readdata(std::string filename)
 		chartdata.lines[i].disappearEvents.resize(jl["judgeLineDisappearEvents"].size());
 		Readevent(jl["judgeLineDisappearEvents"], chartdata.lines[i].disappearEvents, 2);
 	}
-	std::cout << "event " << event_sum << "note " << note_sum << "\n";
+	std::cout << "event " << event_sum << " note " << note_sum << "\n";
 	return chartdata;
 }
 

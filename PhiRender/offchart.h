@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include <vector>
+#include <string>
 
 #define OFF_X (1.0 / 18.0)
 #define OFF_Y 0.6
@@ -32,7 +34,7 @@ namespace OFF
 		std::vector<Note> notesAbove;
 		std::vector<Note> notesBelow;
 		std::vector<Event> speedEvents;
-		std::vector<Event> floorEvents;
+		std::vector<Event> floorEvents;		//from speed
 		std::vector<Event> moveEvents;
 		std::vector<Event> rotateEvents;
 		std::vector<Event> disappearEvents;
@@ -53,7 +55,7 @@ namespace OFF
 		float a;	//alpha
 		float f;	//floor
 		float s;	//speed
-		float bpm;	//bpm
+		float bpm;
 		int index[4] = { 0 };
 	};
 

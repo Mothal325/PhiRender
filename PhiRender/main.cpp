@@ -2,22 +2,27 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <climits>
 #include <raylib.h>
 #include "rpechart.h"
 #include "offchart.h"
 
 #define SW 1920
 #define SH 1080
-#define NW (SW * 0.12f)
+#define NW (SW * 0.125f)
 #define LINEL 5.75f
 #define LINEW 0.0075f
+#define HIT_EFFECT_DURATION 0.5f
+#define HIT_EFFECT_PARTICLE (NW * 0.2f)
 #define BGMSPEED 1.0f
 
 struct HitEffect
 {
-	float x = 0, y = 0;
-	float hittime = 0;
-	float duration = 0.5;
+	float x, y;
+	float hittime;
+	float duration;
+	float xVel[4];
+	float yVel[4];
 
 	void Init(float Lx, float Ly, float Lr, float xPos, float time)
 	{
@@ -26,6 +31,14 @@ struct HitEffect
 		y = std::sin(theta) * xPos * OFF_X * SW + Ly * SH;
 		y = SH - y;
 		hittime = time;
+		duration = HIT_EFFECT_DURATION;
+		for (int i = 0; i < 4; i++)
+		{
+			theta = (float)GetRandomValue(1, 360) / 180.0f * PI;
+			float vel = (float)GetRandomValue(100, 150) / 100.0f;
+			xVel[i] = std::cos(theta) * vel;
+			yVel[i] = std::sin(theta) * vel;
+		}
 	}
 
 	void Draw(float time)
@@ -34,6 +47,14 @@ struct HitEffect
 		float size = (1.0f - powf((duration - rt) / duration, 3.0f)) * NW;
 		unsigned char alpha = fmaxf(0.0f, 255.0f * (duration - rt) / duration);
 		DrawRectangle(x - size / 2, y - size / 2, size, size, {255, 204, 48, alpha });
+		//粒子
+		for (int i = 0; i < 4; i++)
+		{
+			float partx, party;
+			partx = x + xVel[i] * size - HIT_EFFECT_PARTICLE / 2;
+			party = y + yVel[i] * size - HIT_EFFECT_PARTICLE / 2;
+			DrawRectangle(partx, party, HIT_EFFECT_PARTICLE, HIT_EFFECT_PARTICLE, {255, 204, 48, alpha});
+		}
 	}
 };
 
@@ -408,6 +429,8 @@ int main(void)
 			{
 				notedata[i].isPlayed = false;
 			}
+			Effects.clear();
+			Holds.clear();
 		}
 
 		if (IsKeyPressed(KEY_SPACE))
