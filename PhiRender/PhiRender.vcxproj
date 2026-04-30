@@ -133,11 +133,9 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="offchart.cpp" />
-    <ClCompile Include="rpechart.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="offchart.h" />
-    <ClInclude Include="rpechart.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

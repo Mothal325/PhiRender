@@ -4,7 +4,6 @@
 #include <cmath>
 #include <climits>
 #include <raylib.h>
-#include "rpechart.h"
 #include "offchart.h"
 
 #define SW 1920
@@ -229,7 +228,7 @@ std::vector<OFF::Notedata> ReadNotedata(OFF::Chartdata data)
 	return notedata;
 }
 
-int DrawOFFNote(std::vector<OFF::Notedata> &notedata, std::vector<OFF::Linedata> data, float time, bool renderhold)
+int DrawNote(std::vector<OFF::Notedata> &notedata, std::vector<OFF::Linedata> data, float time, bool renderhold)
 {
 	int hitnum = 0;
 	char debugtext[64];
@@ -339,7 +338,7 @@ int DrawOFFNote(std::vector<OFF::Notedata> &notedata, std::vector<OFF::Linedata>
 	return hitnum;
 }
 
-void DrawOFFJudgeLine(OFF::judgeLine line, float time, OFF::Linedata &data)
+void DrawJudgeLine(OFF::judgeLine line, float time, OFF::Linedata &data)
 {
 	OFF::FindLine(line, time, data);
 	Color c = { 255, 255, 255, data.a * 255 };
@@ -461,11 +460,11 @@ int main(void)
 		float playtime = GetMusicTimePlayed(bgm);
 		for (int i = 0; i < data.lines.size(); i++)
 		{
-			DrawOFFJudgeLine(data.lines[i], playtime, linedata[i]);
+			DrawJudgeLine(data.lines[i], playtime, linedata[i]);
 		}
 
-		hitnum = DrawOFFNote(notedata, linedata, playtime, true);
-		hitnum = DrawOFFNote(notedata, linedata, playtime, false);
+		hitnum = DrawNote(notedata, linedata, playtime, true);
+		hitnum = DrawNote(notedata, linedata, playtime, false);
 
 		UpdateHoldHitEffect(linedata, playtime);
 		DrawHitEffect(playtime);
