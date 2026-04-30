@@ -45,6 +45,8 @@ namespace OFF
 		int formatVersion;
 		float offset;
 		std::vector<judgeLine> lines;
+
+		void Readdata(std::string filename);
 	};
 
 	struct Linedata
@@ -68,7 +70,7 @@ namespace OFF
 		bool isPlayed;
 	};
 
-	Chartdata Readdata(std::string filename);
+	void FindLine(const judgeLine &line, float time, Linedata& data);
 
-	void FindLine(judgeLine line, float time, Linedata& data);
+	std::vector<Notedata> ReadNotedata(Chartdata data);
 }

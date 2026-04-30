@@ -2,18 +2,18 @@
 #include <vector>
 #include <string>
 #include <cmath>
-#include <climits>
 #include <raylib.h>
 #include "offchart.h"
 
-#define SW 1920
-#define SH 1080
-#define NW (SW * 0.125f)
-#define LINEL 5.75f
-#define LINEW 0.0075f
-#define HIT_EFFECT_DURATION 0.5f
-#define HIT_EFFECT_PARTICLE (NW * 0.2f)
-#define BGMSPEED 1.0f
+constexpr int SW = 1920;
+constexpr int SH = 1080;
+constexpr int NW = SW * 0.125;
+constexpr float LINEL = 5.75f;
+constexpr float LINEW = 0.0075f;
+constexpr float HIT_EFFECT_DURATION = 0.5f;
+constexpr float HIT_EFFECT_PARTICLE = NW * 0.2f;
+constexpr float BGMSPEED = 1.0f;
+constexpr int FPS = 60;
 
 struct HitEffect
 {
@@ -33,8 +33,8 @@ struct HitEffect
 		duration = HIT_EFFECT_DURATION;
 		for (int i = 0; i < 4; i++)
 		{
-			theta = (float)GetRandomValue(1, 360) / 180.0f * PI;
-			float vel = (float)GetRandomValue(100, 150) / 100.0f;
+			theta = (float)GetRandomValue(1, 360) / 180.0f * PI;	//发射方向
+			float vel = (float)GetRandomValue(100, 150) / 100.0f;	//发射速度？
 			xVel[i] = std::cos(theta) * vel;
 			yVel[i] = std::sin(theta) * vel;
 		}
@@ -121,7 +121,7 @@ void UpdateHoldHitEffect(std::vector<OFF::Linedata> data, float time)
 		[](HoldingHold& h) {return !h.holding; }), Holds.end());
 }
 
-void InitNoteSound(std::vector<OFF::Notedata> notedata)
+void InitNoteSound(const std::vector<OFF::Notedata> &notedata)
 {
 	for (int i = 0; i < notedata.size(); i++)
 	{
@@ -151,84 +151,7 @@ void FreeNoteSound(void)
 	}
 }
 
-std::vector<OFF::Notedata> ReadNotedata(OFF::Chartdata data)
-{
-	std::vector<OFF::Notedata> notedata;
-	std::vector<int> hitnum;
-	std::vector<int> hittime;
-	for (int i = 0; i < data.lines.size(); i++)
-	{
-		OFF::judgeLine aline = data.lines[i];
-		for (int j = 0; j < aline.notesAbove.size(); j++)
-		{
-			OFF::Note anote = aline.notesAbove[j];
-			OFF::Notedata noted;
-			noted.note = anote;
-			noted.lineid = i;
-			noted.isAbove = true;
-			noted.ismh = false;
-			bool findit = false;
-			for (int k = 0; k < hittime.size(); k++)
-			{
-				if (hittime[k] == anote.time)
-				{
-					findit = true;
-					hitnum[k]++;
-					break;
-				}
-			}
-			if (findit == false)
-			{
-				hittime.push_back(anote.time);
-				hitnum.push_back(1);
-			}
-			notedata.push_back(noted);
-		}
-		for (int j = 0; j < aline.notesBelow.size(); j++)
-		{
-			OFF::Note anote = aline.notesBelow[j];
-			OFF::Notedata noted;
-			noted.note = anote;
-			noted.lineid = i;
-			noted.isAbove = false;
-			bool findit = false;
-
-			for (int k = 0; k < hittime.size(); k++)
-			{
-				if (hittime[k] == anote.time)
-				{
-					findit = true;
-					hitnum[k]++;
-					break;
-				}
-			}
-			if (findit == false)
-			{
-				hittime.push_back(anote.time);
-				hitnum.push_back(1);
-			}
-			notedata.push_back(noted);
-		}
-	}
-	for (int i = 0; i < notedata.size(); i++)
-	{
-		OFF::Note anote = notedata[i].note;
-		for (int j = 0; j < hittime.size(); j++)
-		{
-			if (hittime[j] == anote.time)
-			{
-				if (hitnum[j] > 1)
-				{
-					notedata[i].ismh = true;
-				}
-			}
-		}
-	}
-	
-	return notedata;
-}
-
-int DrawNote(std::vector<OFF::Notedata> &notedata, std::vector<OFF::Linedata> data, float time, bool renderhold)
+int DrawNote(std::vector<OFF::Notedata> &notedata, const std::vector<OFF::Linedata> &data, float time, bool renderhold)
 {
 	int hitnum = 0;
 	char debugtext[64];
@@ -338,7 +261,7 @@ int DrawNote(std::vector<OFF::Notedata> &notedata, std::vector<OFF::Linedata> da
 	return hitnum;
 }
 
-void DrawJudgeLine(OFF::judgeLine line, float time, OFF::Linedata &data)
+void DrawJudgeLine(const OFF::judgeLine &line, float time, OFF::Linedata &data)
 {
 	OFF::FindLine(line, time, data);
 	Color c = { 255, 255, 255, data.a * 255 };
@@ -352,8 +275,9 @@ int main(void)
 	std::cout << "谱面文件路径：";
 	std::getline(std::cin, chartname);
 	
-	OFF::Chartdata data = OFF::Readdata(chartname);
-	std::vector<OFF::Notedata> notedata = ReadNotedata(data);
+	OFF::Chartdata data;
+	data.Readdata(chartname);
+	std::vector<OFF::Notedata> notedata = OFF::ReadNotedata(data);
 
 	std::cout << "音频文件路径：";
 	std::getline(std::cin, songname);
@@ -385,11 +309,11 @@ int main(void)
 	SetSoundVolume(Sclick, 0.5f);
 	SetSoundVolume(Sdrag, 0.5f);
 	SetSoundVolume(Sflick, 0.5f);
-	SetMusicVolume(bgm, 1.0f);
+	SetMusicVolume(bgm, 0.5f);
 	SetMusicPitch(bgm, BGMSPEED);
 	SetTextureFilter(bg, TEXTURE_FILTER_TRILINEAR);
 	
-	SetTargetFPS(0);
+	SetTargetFPS(FPS);
 	bool isPlaying = false;
 	bool shouldPlaying = false;
 	char timetext[64] = "";
@@ -406,12 +330,6 @@ int main(void)
 	linedata.resize(data.lines.size());
 	while (!WindowShouldClose())
 	{
-
-		if (IsKeyPressed(KEY_A))
-		{
-			TakeScreenshot("screenshot.png");
-		}
-
 		if (GetMusicTimeLength(bgm) - GetMusicTimePlayed(bgm) < 0.1f)
 		{
 			StopMusicStream(bgm);

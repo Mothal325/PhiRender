@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <string>
+#include <unordered_map>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include "offchart.h"
@@ -58,7 +59,7 @@ void CalculateFloor(judgeLine& line)
 	}
 }
 
-Chartdata OFF::Readdata(std::string filename)
+void OFF::Chartdata::Readdata(std::string filename)
 {
 	std::ifstream file(filename);
 	if (!file.is_open())
@@ -76,57 +77,55 @@ Chartdata OFF::Readdata(std::string filename)
 		std::cerr << "JSON 解析错误喵：" << e.what() << std::endl;
 		exit(-1);
 	}
-	Chartdata chartdata;
 	int event_sum = 0, note_sum = 0;
 	//基础信息
-	chartdata.formatVersion = data["formatVersion"];
-	chartdata.offset = data["offset"];
+	formatVersion = data["formatVersion"];
+	offset = data["offset"];
 	//judgeLineList
 	std::cout << "正在读取judgeLineList\n";
-	chartdata.lines.resize(data["judgeLineList"].size());
+	lines.resize(data["judgeLineList"].size());
 	for (int i = 0; i < data["judgeLineList"].size(); i++)
 	{
 		json jl = data["judgeLineList"][i];
 		std::cout << i << "\n";
-		chartdata.lines[i].bpm = jl["bpm"];
+		lines[i].bpm = jl["bpm"];
 		//notesAbove
 		std::cout << "\tnotesAbove " << jl["notesAbove"].size() << "\n";
 		note_sum += jl["notesAbove"].size();
-		chartdata.lines[i].notesAbove.resize(jl["notesAbove"].size());
-		Readnote(jl["notesAbove"], chartdata.lines[i].notesAbove);
+		lines[i].notesAbove.resize(jl["notesAbove"].size());
+		Readnote(jl["notesAbove"], lines[i].notesAbove);
 		//notesBelow
 		std::cout << "\tnotesBelow " << jl["notesBelow"].size() << "\n";
 		note_sum += jl["notesBelow"].size();
-		chartdata.lines[i].notesBelow.resize(jl["notesBelow"].size());
-		Readnote(jl["notesBelow"], chartdata.lines[i].notesBelow);
+		lines[i].notesBelow.resize(jl["notesBelow"].size());
+		Readnote(jl["notesBelow"], lines[i].notesBelow);
 		//speedEvent
 		std::cout << "\tspeedEvent " << jl["speedEvents"].size() << "\n";
 		event_sum += jl["speedEvents"].size();
-		chartdata.lines[i].speedEvents.resize(jl["speedEvents"].size());
-		Readevent(jl["speedEvents"], chartdata.lines[i].speedEvents, 0);
-		chartdata.lines[i].floorEvents.resize(jl["speedEvents"].size());
-		CalculateFloor(chartdata.lines[i]);
+		lines[i].speedEvents.resize(jl["speedEvents"].size());
+		Readevent(jl["speedEvents"], lines[i].speedEvents, 0);
+		lines[i].floorEvents.resize(jl["speedEvents"].size());
+		CalculateFloor(lines[i]);
 		//moveEvents
 		std::cout << "\tmoveEvents " << jl["judgeLineMoveEvents"].size() << "\n";
 		event_sum += jl["judgeLineMoveEvents"].size();
-		chartdata.lines[i].moveEvents.resize(jl["judgeLineMoveEvents"].size());
-		Readevent(jl["judgeLineMoveEvents"], chartdata.lines[i].moveEvents, 1);
+		lines[i].moveEvents.resize(jl["judgeLineMoveEvents"].size());
+		Readevent(jl["judgeLineMoveEvents"], lines[i].moveEvents, 1);
 		//rotateEvents
 		std::cout << "\trotateEvents " << jl["judgeLineRotateEvents"].size() << "\n";
 		event_sum += jl["judgeLineRotateEvents"].size();
-		chartdata.lines[i].rotateEvents.resize(jl["judgeLineRotateEvents"].size());
-		Readevent(jl["judgeLineRotateEvents"], chartdata.lines[i].rotateEvents, 2);
+		lines[i].rotateEvents.resize(jl["judgeLineRotateEvents"].size());
+		Readevent(jl["judgeLineRotateEvents"], lines[i].rotateEvents, 2);
 		//disappearEvents
 		std::cout << "\tdisappearEvents " << jl["judgeLineDisappearEvents"].size() << "\n";
 		event_sum += jl["judgeLineDisappearEvents"].size();
-		chartdata.lines[i].disappearEvents.resize(jl["judgeLineDisappearEvents"].size());
-		Readevent(jl["judgeLineDisappearEvents"], chartdata.lines[i].disappearEvents, 2);
+		lines[i].disappearEvents.resize(jl["judgeLineDisappearEvents"].size());
+		Readevent(jl["judgeLineDisappearEvents"], lines[i].disappearEvents, 2);
 	}
 	std::cout << "event " << event_sum << " note " << note_sum << "\n";
-	return chartdata;
 }
 
-void OFF::FindLine(judgeLine line, float time, Linedata& data)
+void OFF::FindLine(const judgeLine &line, float time, Linedata& data)
 {
 	float t = time * line.bpm / OFF_T;
 	//x and y
@@ -173,4 +172,45 @@ void OFF::FindLine(judgeLine line, float time, Linedata& data)
 	}
 	//bpm
 	data.bpm = line.bpm;
+}
+
+std::vector<OFF::Notedata> OFF::ReadNotedata(OFF::Chartdata data)
+{
+	std::vector<OFF::Notedata> notedata;
+	std::unordered_map<int, int> hitCount;
+	for (int i = 0; i < data.lines.size(); i++)
+	{
+		OFF::judgeLine aline = data.lines[i];
+		for (int j = 0; j < aline.notesAbove.size(); j++)
+		{
+			OFF::Note anote = aline.notesAbove[j];
+			OFF::Notedata noted;
+			noted.note = anote;
+			noted.lineid = i;
+			noted.isAbove = true;
+			noted.ismh = false;
+			hitCount[anote.time]++;
+			notedata.push_back(noted);
+		}
+		for (int j = 0; j < aline.notesBelow.size(); j++)
+		{
+			OFF::Note anote = aline.notesBelow[j];
+			OFF::Notedata noted;
+			noted.note = anote;
+			noted.lineid = i;
+			noted.isAbove = false;
+			hitCount[anote.time]++;
+			notedata.push_back(noted);
+		}
+	}
+	for (int i = 0; i < notedata.size(); i++)
+	{
+		OFF::Note anote = notedata[i].note;
+		if (hitCount[anote.time] > 1)
+		{
+			notedata[i].ismh = true;
+		}
+	}
+
+	return notedata;
 }
