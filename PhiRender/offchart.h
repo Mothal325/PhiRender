@@ -2,9 +2,11 @@
 #include <vector>
 #include <string>
 
-#define OFF_X (1.0 / 18.0)
-#define OFF_Y 0.6
-#define OFF_T 1.875
+constexpr float OFF_X = 1.0f / 18.0f;
+constexpr float OFF_Y = 0.6f;
+constexpr float OFF_T = 1.875f;
+//t * OFF_T / bpm = time
+//time * bpm / OFF_T = t
 
 namespace OFF
 {
@@ -59,6 +61,8 @@ namespace OFF
 		float s;	//speed
 		float bpm;
 		int index[4] = { 0 };
+
+		void FindLine(const judgeLine& line, float time);
 	};
 
 	struct Notedata
@@ -69,8 +73,6 @@ namespace OFF
 		bool ismh;
 		bool isPlayed;
 	};
-
-	void FindLine(const judgeLine &line, float time, Linedata& data);
 
 	std::vector<Notedata> ReadNotedata(Chartdata data);
 }

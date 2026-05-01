@@ -3,123 +3,14 @@
 #include <string>
 #include <cmath>
 #include <raylib.h>
+#include "Constants.h"
 #include "offchart.h"
-
-constexpr int SW = 1920;
-constexpr int SH = 1080;
-constexpr int NW = SW * 0.125;
-constexpr float LINEL = 5.75f;
-constexpr float LINEW = 0.0075f;
-constexpr float HIT_EFFECT_DURATION = 0.5f;
-constexpr float HIT_EFFECT_PARTICLE = NW * 0.2f;
-constexpr float BGMSPEED = 1.0f;
-constexpr int FPS = 60;
-
-struct HitEffect
-{
-	float x, y;
-	float hittime;
-	float duration;
-	float xVel[4];
-	float yVel[4];
-
-	void Init(float Lx, float Ly, float Lr, float xPos, float time)
-	{
-		float theta = Lr / 180.0 * PI;
-		x = std::cos(theta) * xPos * OFF_X * SW + Lx * SW;
-		y = std::sin(theta) * xPos * OFF_X * SW + Ly * SH;
-		y = SH - y;
-		hittime = time;
-		duration = HIT_EFFECT_DURATION;
-		for (int i = 0; i < 4; i++)
-		{
-			theta = (float)GetRandomValue(1, 360) / 180.0f * PI;	//发射方向
-			float vel = (float)GetRandomValue(100, 150) / 100.0f;	//发射速度？
-			xVel[i] = std::cos(theta) * vel;
-			yVel[i] = std::sin(theta) * vel;
-		}
-	}
-
-	void Draw(float time)
-	{
-		float rt = time - hittime;
-		float size = (1.0f - powf((duration - rt) / duration, 3.0f)) * NW;
-		unsigned char alpha = fmaxf(0.0f, 255.0f * (duration - rt) / duration);
-		DrawRectangle(x - size / 2, y - size / 2, size, size, {255, 204, 48, alpha });
-		//粒子
-		for (int i = 0; i < 4; i++)
-		{
-			float partx, party;
-			partx = x + xVel[i] * size - HIT_EFFECT_PARTICLE / 2;
-			party = y + yVel[i] * size - HIT_EFFECT_PARTICLE / 2;
-			DrawRectangle(partx, party, HIT_EFFECT_PARTICLE, HIT_EFFECT_PARTICLE, {255, 204, 48, alpha});
-		}
-	}
-};
-
-struct HoldingHold
-{
-	float positionX;
-	int lineid;
-	int hittime;
-	int holdtime;
-	int count;
-	bool holding;
-
-	void Init(OFF::Notedata data)
-	{
-		positionX = data.note.positionX;
-		lineid = data.lineid;
-		hittime = data.note.time;
-		holdtime = data.note.holdTime;
-		count = 1;
-		holding = true;
-	}
-};
+#include "HitEffect.h"
 
 Texture Tclick, Tclick_mh, Tdrag, Tdrag_mh, Tflick, Tflick_mh, Thold, Thold_mh;
 Sound Sclick, Sdrag, Sflick;
 std::vector<Sound> Snotes;
-std::vector<HitEffect> Effects;
-std::vector<HoldingHold> Holds;
 int holdAtlas[2] = { 50, 50 }, holdAtlasMH[2] = { 50, 50 };
-
-void DrawHitEffect(float time)
-{
-	for (HitEffect effect : Effects)
-	{
-		effect.Draw(time);
-	}
-
-	Effects.erase(std::remove_if(Effects.begin(), Effects.end(),
-		[&time](const HitEffect &e) {return time - e.hittime > e.duration; }), Effects.end());
-}
-
-void UpdateHoldHitEffect(std::vector<OFF::Linedata> data, float time)
-{
-	for (int i = 0; i < Holds.size(); i++)
-	{
-		int id = Holds[i].lineid;
-		float dt = OFF_T / data[id].bpm;
-		float hittime = Holds[i].hittime * dt;
-		float holdtime = Holds[i].holdtime * dt;
-		if (time - hittime >= holdtime)
-		{
-			Holds[i].holding = false;
-			continue;
-		}
-		if (time - hittime >= Holds[i].count * dt * 16)
-		{
-			HitEffect effect;
-			effect.Init(data[id].x, data[id].y, data[id].r, Holds[i].positionX, time);
-			Effects.push_back(effect);
-			Holds[i].count++;
-		}
-	}
-
-	Holds.erase(std::remove_if(Holds.begin(), Holds.end(),
-		[](HoldingHold& h) {return !h.holding; }), Holds.end());
-}
 
 void InitNoteSound(const std::vector<OFF::Notedata> &notedata)
 {
@@ -128,17 +19,9 @@ void InitNoteSound(const std::vector<OFF::Notedata> &notedata)
 		switch (notedata[i].note.type)
 		{
 		case 1:
-		case 3:
-			Snotes.push_back(LoadSoundAlias(Sclick));
-			break;
-		case 2:
-			Snotes.push_back(LoadSoundAlias(Sdrag));
-			break;
-		case 4:
-			Snotes.push_back(LoadSoundAlias(Sflick));
-			break;
-		default:
-			break;
+		case 3: Snotes.push_back(LoadSoundAlias(Sclick)); break;
+		case 2: Snotes.push_back(LoadSoundAlias(Sdrag));  break;
+		case 4: Snotes.push_back(LoadSoundAlias(Sflick)); break;
 		}
 	}
 }
@@ -164,20 +47,6 @@ int DrawNote(std::vector<OFF::Notedata> &notedata, const std::vector<OFF::Lineda
 		int mhnumber = notedata[i].ismh ? 4 : 0;
 		if (note.time <= t && !renderhold)
 		{
-			if (!notedata[i].isPlayed)
-			{
-				notedata[i].isPlayed = true;
-				PlaySound(Snotes[i]);
-				HitEffect effect;
-				effect.Init(data[id].x, data[id].y, data[id].r, note.positionX, time);
-				Effects.push_back(effect);
-				if (note.type == 3)
-				{
-					HoldingHold hold;
-					hold.Init(notedata[i]);
-					Holds.push_back(hold);
-				}
-			}
 			if (note.type != 3)
 			{
 				hitnum++;
@@ -216,16 +85,14 @@ int DrawNote(std::vector<OFF::Notedata> &notedata, const std::vector<OFF::Lineda
 				case 4:
 					DrawTexturePro(Tflick, { 0, 0, (float)Tflick.width, (float)Tflick.height }, { x, SH - y, NW, (float)Tflick.height / (float)Tflick.width * NW }, { NW / 2.0f, (float)Tflick.height / (float)Tflick.width * NW / 2.0f }, rotation, WHITE);
 					break;
-				case 5:
+				case (1 + 4):
 					DrawTexturePro(Tclick_mh, { 0, 0, (float)Tclick_mh.width, (float)Tclick_mh.height }, { x, SH - y, (float)Tclick_mh.width / (float)Tclick.width * NW, (float)Tclick_mh.height / (float)Tclick.width * NW }, { (float)Tclick_mh.width / (float)Tclick.width * NW / 2.0f, (float)Tclick_mh.height / (float)Tclick.width * NW / 2.0f }, rotation, WHITE);
 					break;
-				case 6:
+				case (2 + 4):
 					DrawTexturePro(Tdrag_mh, { 0, 0, (float)Tdrag_mh.width, (float)Tdrag_mh.height }, { x, SH - y, (float)Tdrag_mh.width / (float)Tdrag.width * NW, (float)Tdrag_mh.height / (float)Tdrag.width * NW }, { (float)Tdrag_mh.width / (float)Tdrag.width * NW / 2.0f, (float)Tdrag_mh.height / (float)Tdrag.width * NW / 2.0f }, rotation, WHITE);
 					break;
-				case 8:
+				case (4 + 4):
 					DrawTexturePro(Tflick_mh, { 0, 0, (float)Tflick_mh.width, (float)Tflick_mh.height }, { x, SH - y, (float)Tflick_mh.width / (float)Tflick.width * NW, (float)Tflick_mh.height / (float)Tflick.width * NW }, { (float)Tflick_mh.width / (float)Tflick.width * NW / 2.0f, (float)Tflick_mh.height / (float)Tflick.width * NW / 2.0f }, rotation, WHITE);
-					break;
-				default:
 					break;
 				}
 			}
@@ -263,7 +130,7 @@ int DrawNote(std::vector<OFF::Notedata> &notedata, const std::vector<OFF::Lineda
 
 void DrawJudgeLine(const OFF::judgeLine &line, float time, OFF::Linedata &data)
 {
-	OFF::FindLine(line, time, data);
+	data.FindLine(line, time);
 	Color c = { 255, 255, 255, data.a * 255 };
 	Rectangle l = { data.x * SW, (1.0 - data.y) * SH, LINEL * SH, LINEW * SH };
 	DrawRectanglePro(l, { l.width / 2, l.height / 2 }, -data.r, c);
@@ -328,6 +195,9 @@ int main(void)
 
 	std::vector<OFF::Linedata> linedata;
 	linedata.resize(data.lines.size());
+
+	HitEffectManager Effect;
+
 	while (!WindowShouldClose())
 	{
 		if (GetMusicTimeLength(bgm) - GetMusicTimePlayed(bgm) < 0.1f)
@@ -346,8 +216,7 @@ int main(void)
 			{
 				notedata[i].isPlayed = false;
 			}
-			Effects.clear();
-			Holds.clear();
+			Effect.clear();
 		}
 
 		if (IsKeyPressed(KEY_SPACE))
@@ -384,8 +253,9 @@ int main(void)
 		hitnum = DrawNote(notedata, linedata, playtime, true);
 		hitnum = DrawNote(notedata, linedata, playtime, false);
 
-		UpdateHoldHitEffect(linedata, playtime);
-		DrawHitEffect(playtime);
+		Effect.AddEffect(linedata, notedata, playtime);
+		Effect.UpdateHoldHitEffect(linedata, playtime);
+		Effect.DrawHitEffect(playtime);
 
 		sprintf_s(timetext, "Time:%.1f/%.1f\nFPS:%d", GetMusicTimePlayed(bgm), GetMusicTimeLength(bgm), GetFPS());
 		sprintf_s(combotext, "%d", hitnum);

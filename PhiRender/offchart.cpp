@@ -125,53 +125,53 @@ void OFF::Chartdata::Readdata(std::string filename)
 	std::cout << "event " << event_sum << " note " << note_sum << "\n";
 }
 
-void OFF::FindLine(const judgeLine &line, float time, Linedata& data)
+void OFF::Linedata::FindLine(const judgeLine &line, float time)
 {
 	float t = time * line.bpm / OFF_T;
 	//x and y
-	for (int i = data.index[0]; i < line.moveEvents.size(); i++)
+	for (int i = index[0]; i < line.moveEvents.size(); i++)
 	{
 		if (t < line.moveEvents[i].endTime)
 		{
-			data.x = (line.moveEvents[i].end - line.moveEvents[i].start) * (t - line.moveEvents[i].startTime) / (line.moveEvents[i].endTime - line.moveEvents[i].startTime) + line.moveEvents[i].start;
-			data.y = (line.moveEvents[i].end2 - line.moveEvents[i].start2) * (t - line.moveEvents[i].startTime) / (line.moveEvents[i].endTime - line.moveEvents[i].startTime) + line.moveEvents[i].start2;
-			data.index[0] = i;
+			x = (line.moveEvents[i].end - line.moveEvents[i].start) * (t - line.moveEvents[i].startTime) / (line.moveEvents[i].endTime - line.moveEvents[i].startTime) + line.moveEvents[i].start;
+			y = (line.moveEvents[i].end2 - line.moveEvents[i].start2) * (t - line.moveEvents[i].startTime) / (line.moveEvents[i].endTime - line.moveEvents[i].startTime) + line.moveEvents[i].start2;
+			index[0] = i;
 			break;
 		}
 	}
 	//rotate
-	for (int i = data.index[1]; i < line.rotateEvents.size(); i++)
+	for (int i = index[1]; i < line.rotateEvents.size(); i++)
 	{
 		if (t < line.rotateEvents[i].endTime)
 		{
-			data.r = (line.rotateEvents[i].end - line.rotateEvents[i].start) * (t - line.rotateEvents[i].startTime) / (line.rotateEvents[i].endTime - line.rotateEvents[i].startTime) + line.rotateEvents[i].start;
-			data.index[1] = i;
+			r = (line.rotateEvents[i].end - line.rotateEvents[i].start) * (t - line.rotateEvents[i].startTime) / (line.rotateEvents[i].endTime - line.rotateEvents[i].startTime) + line.rotateEvents[i].start;
+			index[1] = i;
 			break;
 		}
 	}
 	//alpha
-	for (int i = data.index[2]; i < line.disappearEvents.size(); i++)
+	for (int i = index[2]; i < line.disappearEvents.size(); i++)
 	{
 		if (t < line.disappearEvents[i].endTime)
 		{
-			data.a = (line.disappearEvents[i].end - line.disappearEvents[i].start) * (t - line.disappearEvents[i].startTime) / (line.disappearEvents[i].endTime - line.disappearEvents[i].startTime) + line.disappearEvents[i].start;
-			data.index[2] = i;
+			a = (line.disappearEvents[i].end - line.disappearEvents[i].start) * (t - line.disappearEvents[i].startTime) / (line.disappearEvents[i].endTime - line.disappearEvents[i].startTime) + line.disappearEvents[i].start;
+			index[2] = i;
 			break;
 		}
 	}
 	//floor and speed
-	for (int i = data.index[3]; i < line.floorEvents.size(); i++)
+	for (int i = index[3]; i < line.floorEvents.size(); i++)
 	{
 		if (t < line.floorEvents[i].endTime)
 		{
-			data.f = (line.floorEvents[i].end - line.floorEvents[i].start) * (t - line.floorEvents[i].startTime) / (line.floorEvents[i].endTime - line.floorEvents[i].startTime) + line.floorEvents[i].start;
-			data.s = line.speedEvents[i].start;
-			data.index[3] = i;
+			f = (line.floorEvents[i].end - line.floorEvents[i].start) * (t - line.floorEvents[i].startTime) / (line.floorEvents[i].endTime - line.floorEvents[i].startTime) + line.floorEvents[i].start;
+			s = line.speedEvents[i].start;
+			index[3] = i;
 			break;
 		}
 	}
 	//bpm
-	data.bpm = line.bpm;
+	bpm = line.bpm;
 }
 
 std::vector<OFF::Notedata> OFF::ReadNotedata(OFF::Chartdata data)
