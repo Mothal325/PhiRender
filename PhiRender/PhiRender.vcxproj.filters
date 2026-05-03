@@ -24,6 +24,15 @@
     <ClCompile Include="HitEffect.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="State.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="HitSound.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="offchart.h">
@@ -33,6 +42,15 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="HitEffect.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="State.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="HitSound.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -125,7 +125,7 @@ void OFF::Chartdata::Readdata(std::string filename)
 	std::cout << "event " << event_sum << " note " << note_sum << "\n";
 }
 
-void OFF::Linedata::FindLine(const judgeLine &line, float time)
+void OFF::Linedata::FindLine(const judgeLine& line, float time)
 {
 	float t = time * line.bpm / OFF_T;
 	//x and y
@@ -174,7 +174,7 @@ void OFF::Linedata::FindLine(const judgeLine &line, float time)
 	bpm = line.bpm;
 }
 
-std::vector<OFF::Notedata> OFF::ReadNotedata(OFF::Chartdata data)
+std::vector<OFF::Notedata> OFF::ReadNotedata(const OFF::Chartdata& data)
 {
 	std::vector<OFF::Notedata> notedata;
 	std::unordered_map<int, int> hitCount;

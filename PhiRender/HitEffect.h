@@ -1,4 +1,5 @@
 #pragma once
+#include "Constants.h"
 #include "offchart.h"
 
 constexpr float HIT_EFFECT_DURATION = 0.5f;			//打击效果持续时间
@@ -25,15 +26,15 @@ struct HoldingHold
 	int count;
 	bool holding;
 
-	void Init(const OFF::Notedata &note);
+	void Init(const OFF::Notedata& note);
 };
 
 struct HitEffectManager
 {
-	void AddEffect(const std::vector<OFF::Linedata> &lines, std::vector<OFF::Notedata> &notes, float time);
+	void AddEffect(const OFF::Linedata& line, const OFF::Notedata& note, float time);
 	void DrawHitEffect(float time);
-	void UpdateHoldHitEffect(std::vector<OFF::Linedata> data, float time);
-	void clear();
+	void UpdateHoldHitEffect(const std::vector<OFF::Linedata>& data, float time);
+	void Clear(void);
 
 private:
 	std::vector<HitEffect> Effects;
