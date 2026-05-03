@@ -26,7 +26,6 @@ void HitEffect::Draw(float time)
 	float rt = time - hittime;
 	float size = (1.0f - powf((duration - rt) / duration, 3.0f)) * NW;
 	unsigned char alpha = fmaxf(0.0f, 255.0f * (duration - rt) / duration);
-	//DrawRectangle(x - size / 2, y - size / 2, size, size, { 255, 204, 48, alpha });
 	Rectangle rec = { x - size / 2, y - size / 2, size, size };
 	DrawRectangleLinesEx(rec, NW * 0.1f, { 255, 204, 48, alpha });
 	//粒子
@@ -39,7 +38,7 @@ void HitEffect::Draw(float time)
 	}
 }
 
-void HoldingHold::Init(const OFF::Notedata &note)
+void HoldingHold::Init(const OFF::Notedata& note)
 {
 	positionX = note.note.positionX;
 	lineid = note.lineid;
@@ -49,33 +48,26 @@ void HoldingHold::Init(const OFF::Notedata &note)
 	holding = true;
 }
 
-void HitEffectManager::AddEffect(const std::vector<OFF::Linedata>& lines, std::vector<OFF::Notedata>& notes, float time)
+void HitEffectManager::AddEffect(const OFF::Linedata& line, const OFF::Notedata& note, float time)
 {
-	for(auto &note : notes)
+	int i = note.lineid;
+	if (note.note.type == 3)
 	{
-		int i = note.lineid;
-		if (note.note.time <= time * lines[i].bpm / OFF_T && !note.isPlayed)
-		{
-			note.isPlayed = true;
-			if (note.note.type == 3)
-			{
-				HoldingHold Hold;
-				Hold.Init(note);
-				Holds.push_back(Hold);
-			}
-			else
-			{
-				HitEffect effect;
-				effect.Init(lines[i].x, lines[i].y, lines[i].r, note.note.positionX, note.note.time * OFF_T / lines[i].bpm);
-				Effects.push_back(effect);
-			}
-		}
+		HoldingHold Hold;
+		Hold.Init(note);
+		Holds.push_back(Hold);
+	}
+	else
+	{
+		HitEffect effect;
+		effect.Init(line.x, line.y, line.r, note.note.positionX, note.note.time * OFF_T / line.bpm);
+		Effects.push_back(effect);
 	}
 }
 
 void HitEffectManager::DrawHitEffect(float time)
 {
-	for (auto &effect : Effects)
+	for (auto& effect : Effects)
 	{
 		effect.Draw(time);
 	}
@@ -84,9 +76,9 @@ void HitEffectManager::DrawHitEffect(float time)
 		[&time](const HitEffect& e) {return time - e.hittime > e.duration; }), Effects.end());
 }
 
-void HitEffectManager::UpdateHoldHitEffect(std::vector<OFF::Linedata> data, float time)
+void HitEffectManager::UpdateHoldHitEffect(const std::vector<OFF::Linedata>& data, float time)
 {
-	for (auto &Hold : Holds)
+	for (auto& Hold : Holds)
 	{
 		int i = Hold.lineid;
 		float dt = OFF_T / data[i].bpm;
@@ -110,7 +102,7 @@ void HitEffectManager::UpdateHoldHitEffect(std::vector<OFF::Linedata> data, floa
 		[](HoldingHold& h) {return !h.holding; }), Holds.end());
 }
 
-void HitEffectManager::clear()
+void HitEffectManager::Clear()
 {
 	Effects.clear();
 	Holds.clear();

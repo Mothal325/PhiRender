@@ -5,14 +5,14 @@
 constexpr float OFF_X = 1.0f / 18.0f;
 constexpr float OFF_Y = 0.6f;
 constexpr float OFF_T = 1.875f;
-//t * OFF_T / bpm = time
-//time * bpm / OFF_T = t
+//time = t * OFF_T / bpm
+//t = time * bpm / OFF_T
 
 namespace OFF
 {
 	struct Note
 	{
-		int type;
+		int type;	//1 -> Tap, 2 -> Drag, 3 -> Hold, 4 -> Flick
 		int time;
 		float positionX;
 		int holdTime;
@@ -74,5 +74,5 @@ namespace OFF
 		bool isPlayed;
 	};
 
-	std::vector<Notedata> ReadNotedata(Chartdata data);
+	std::vector<Notedata> ReadNotedata(const Chartdata& data);
 }
