@@ -1,7 +1,7 @@
 ﻿#include <vector>
 #include <cmath>
 #include "offchart.h"
-#include "Resource.h"
+#include "NoteTexture.h"
 #include "HitEffect.h"
 #include "HitSound.h"
 #include "State.h"
@@ -53,7 +53,7 @@ void State::Update(float time, const std::vector<OFF::judgeLine>& lines, HitEffe
 	EffectM.UpdateHoldHitEffect(linedata, time);
 }
 
-void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vector<OFF::Linedata>& data, float time, bool renderhold, const Resource& res)
+void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vector<OFF::Linedata>& data, float time, bool renderhold, NoteTexture& res)
 {
 	for (int i = notedata.size() - 1; i >= 0; i--)
 	{
@@ -67,7 +67,7 @@ void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vector<OFF:
 			continue;
 		}
 		float d = note.floorPosition - data[id].f;
-		if (d > -0.002 && d < 2.0 / OFF_Y)
+		if (d > -0.002 && d < 2.0 / OFF_Y || t >= note.time && t < note.time + note.holdTime)
 		{
 			float x, y, lx, ly, theta;
 			lx = note.positionX * OFF_X * SW;
@@ -82,27 +82,7 @@ void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vector<OFF:
 			float rotation = -data[id].r;
 			if (note.type != 3 && !renderhold)
 			{
-				switch (note.type + mhnumber)
-				{
-				case 1:
-					DrawTexturePro(res.Tclick, { 0, 0, (float)res.Tclick.width, (float)res.Tclick.height }, { x, SH - y, NW, (float)res.Tclick.height / (float)res.Tclick.width * NW }, { NW / 2.0f, (float)res.Tclick.height / (float)res.Tclick.width * NW / 2.0f }, rotation, WHITE);
-					break;
-				case 2:
-					DrawTexturePro(res.Tdrag, { 0, 0, (float)res.Tdrag.width, (float)res.Tdrag.height }, { x, SH - y, NW, (float)res.Tdrag.height / (float)res.Tdrag.width * NW }, { NW / 2.0f, (float)res.Tdrag.height / (float)res.Tdrag.width * NW / 2.0f }, rotation, WHITE);
-					break;
-				case 4:
-					DrawTexturePro(res.Tflick, { 0, 0, (float)res.Tflick.width, (float)res.Tflick.height }, { x, SH - y, NW, (float)res.Tflick.height / (float)res.Tflick.width * NW }, { NW / 2.0f, (float)res.Tflick.height / (float)res.Tflick.width * NW / 2.0f }, rotation, WHITE);
-					break;
-				case (1 + 4):
-					DrawTexturePro(res.Tclick_mh, { 0, 0, (float)res.Tclick_mh.width, (float)res.Tclick_mh.height }, { x, SH - y, (float)res.Tclick_mh.width / (float)res.Tclick.width * NW, (float)res.Tclick_mh.height / (float)res.Tclick.width * NW }, { (float)res.Tclick_mh.width / (float)res.Tclick.width * NW / 2.0f, (float)res.Tclick_mh.height / (float)res.Tclick.width * NW / 2.0f }, rotation, WHITE);
-					break;
-				case (2 + 4):
-					DrawTexturePro(res.Tdrag_mh, { 0, 0, (float)res.Tdrag_mh.width, (float)res.Tdrag_mh.height }, { x, SH - y, (float)res.Tdrag_mh.width / (float)res.Tdrag.width * NW, (float)res.Tdrag_mh.height / (float)res.Tdrag.width * NW }, { (float)res.Tdrag_mh.width / (float)res.Tdrag.width * NW / 2.0f, (float)res.Tdrag_mh.height / (float)res.Tdrag.width * NW / 2.0f }, rotation, WHITE);
-					break;
-				case (4 + 4):
-					DrawTexturePro(res.Tflick_mh, { 0, 0, (float)res.Tflick_mh.width, (float)res.Tflick_mh.height }, { x, SH - y, (float)res.Tflick_mh.width / (float)res.Tflick.width * NW, (float)res.Tflick_mh.height / (float)res.Tflick.width * NW }, { (float)res.Tflick_mh.width / (float)res.Tflick.width * NW / 2.0f, (float)res.Tflick_mh.height / (float)res.Tflick.width * NW / 2.0f }, rotation, WHITE);
-					break;
-				}
+				res.DrawNoteTexture(note.type, notedata[i].ismh, x, y, rotation);
 			}
 			else if (note.type == 3 && note.speed != 0 && renderhold)
 			{
@@ -110,26 +90,7 @@ void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vector<OFF:
 				float remainlength = length;
 				if (note.time < t && t <= note.time + note.holdTime)
 					remainlength -= note.speed * (t - note.time) * OFF_T / data[id].bpm * OFF_Y * SH;
-				if (notedata[i].ismh)
-				{
-					float holdmhwidth = (float)res.Thold_mh.width / (float)res.Thold.width * NW;
-					DrawTexturePro(res.Thold_mh, { 0, (float)res.holdAtlasMH[0], (float)res.Thold_mh.width, (float)res.Thold_mh.height - res.holdAtlasMH[1] - res.holdAtlasMH[0] }, { x, SH - y, holdmhwidth, remainlength }, { holdmhwidth / 2.0f, remainlength }, rotation + 180.0 * updown, WHITE);
-					DrawTexturePro(res.Thold_mh, { 0, 0, (float)res.Thold_mh.width, (float)res.holdAtlasMH[0] }, { x, SH - y, holdmhwidth, (float)res.holdAtlasMH[0] / (float)res.Thold_mh.width * holdmhwidth }, { holdmhwidth / 2.0f, remainlength + (float)res.holdAtlasMH[0] / (float)res.Thold_mh.width * holdmhwidth }, rotation + 180.0 * updown, WHITE);
-					if (note.time > t)
-					{
-						DrawTexturePro(res.Thold_mh, { 0, (float)res.Thold_mh.height - res.holdAtlasMH[1], (float)res.Thold_mh.width, (float)res.holdAtlasMH[1] }, { x, SH - y, holdmhwidth, (float)res.holdAtlasMH[1] / (float)res.Thold_mh.width * holdmhwidth }, { holdmhwidth / 2.0f, 0.0f }, rotation + 180.0 * updown, WHITE);
-					}
-				}
-				else
-				{
-					DrawTexturePro(res.Thold, { 0, (float)res.holdAtlas[0], (float)res.Thold.width, (float)res.Thold.height - res.holdAtlas[1] - res.holdAtlas[0] }, { x, SH - y, NW, remainlength }, { NW / 2.0f, remainlength }, rotation + 180.0 * updown, WHITE);
-					DrawTexturePro(res.Thold, { 0, 0, (float)res.Thold.width, (float)res.holdAtlas[0] }, { x, SH - y, NW, (float)res.holdAtlas[0] / (float)res.Thold.width * NW }, { NW / 2.0f, remainlength + (float)res.holdAtlas[0] / (float)res.Thold.width * NW }, rotation + 180.0 * updown, WHITE);
-					if (note.time > t)
-					{
-						DrawTexturePro(res.Thold, { 0, (float)res.Thold.height - res.holdAtlas[1], (float)res.Thold.width, (float)res.holdAtlas[1] }, { x, SH - y, NW, (float)res.holdAtlas[1] / (float)res.Thold.width * NW }, { NW / 2.0f, 0.0f }, rotation + 180.0 * updown, WHITE);
-
-					}
-				}
+				res.DrawHoldTexture(note.time <= t, notedata[i].ismh, x, y, rotation, remainlength, updown);
 			}
 		}
 	}
@@ -145,7 +106,7 @@ void DrawJudgeLine(const std::vector<OFF::Linedata>& data)
 	}
 }
 
-void State::Draw(float time, const Resource& res)
+void State::Draw(float time, NoteTexture& res)
 {
 	DrawJudgeLine(linedata);
 

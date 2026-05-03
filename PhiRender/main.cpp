@@ -5,7 +5,7 @@
 #include <raylib.h>
 #include "Constants.h"
 #include "offchart.h"
-#include "Resource.h"
+#include "NoteTexture.h"
 #include "State.h"
 #include "HitEffect.h"
 #include "HitSound.h"
@@ -44,7 +44,7 @@ int main(void)
 	State GameState;
 	GameState.Init(data);
 
-	Resource res;
+	NoteTexture res;
 	res.LoadResource();
 
 	Font Phifont_s = LoadFontEx("res/Phifont.ttf", (int)(SH * 0.025), NULL, 0);
