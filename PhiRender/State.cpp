@@ -1,4 +1,4 @@
-#include <vector>
+﻿#include <vector>
 #include <cmath>
 #include "offchart.h"
 #include "Resource.h"

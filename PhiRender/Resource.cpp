@@ -1,4 +1,4 @@
-#include <raylib.h>
+﻿#include <raylib.h>
 #include "Resource.h"
 
 void Resource::LoadResource(void)

@@ -1,4 +1,4 @@
-#include <cmath>
+﻿#include <cmath>
 #include <raylib.h>
 #include "Constants.h"
 #include "offchart.h"
@@ -6,7 +6,7 @@
 
 void HitEffect::Init(float Lx, float Ly, float Lr, float xPos, float time)
 {
-	float theta = Lr / 180.0 * PI;
+	float theta = Lr / 180.0f * PI;
 	x = std::cos(theta) * xPos * OFF_X * SW + Lx * SW;
 	y = std::sin(theta) * xPos * OFF_X * SW + Ly * SH;
 	y = SH - y;

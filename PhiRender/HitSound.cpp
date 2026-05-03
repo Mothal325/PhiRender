@@ -1,4 +1,4 @@
-#include <raylib.h>
+﻿#include <raylib.h>
 #include "offchart.h"
 #include "HitSound.h"
 

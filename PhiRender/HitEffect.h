@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Constants.h"
 #include "offchart.h"
 

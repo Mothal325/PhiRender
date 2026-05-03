@@ -47,9 +47,9 @@ int main(void)
 	Resource res;
 	res.LoadResource();
 
-	Font Phifont_s = LoadFontEx("res/Phifont.ttf", SH * 0.025, NULL, 0);
-	Font Phifont_m = LoadFontEx("res/Phifont.ttf", SH * 0.05, NULL, 0);
-	Font Phifont_l = LoadFontEx("res/Phifont.ttf", SH * 0.075, NULL, 0);
+	Font Phifont_s = LoadFontEx("res/Phifont.ttf", (int)(SH * 0.025), NULL, 0);
+	Font Phifont_m = LoadFontEx("res/Phifont.ttf", (int)(SH * 0.05), NULL, 0);
+	Font Phifont_l = LoadFontEx("res/Phifont.ttf", (int)(SH * 0.075), NULL, 0);
 
 	SetMusicVolume(bgm, 0.5f);
 	SetMusicPitch(bgm, BGMSPEED);
@@ -104,11 +104,11 @@ int main(void)
 		GameState.Draw(playtime, res);
 		EffectM.DrawHitEffect(playtime);
 
-		int score = (double)GameState.GetHitNum() / GameState.GetNoteNum() * 1000000.0 + 0.5;
+		int score = (int)((double)GameState.GetHitNum() / GameState.GetNoteNum() * 1000000.0 + 0.5);
 
-		sprintf_s(timetext, "Time:%.1f/%.1f\nFPS:%d", GetMusicTimePlayed(bgm), GetMusicTimeLength(bgm), GetFPS());
-		sprintf_s(combotext, "%d", GameState.GetHitNum());
-		sprintf_s(scoretext, "%07d", score);
+		std::snprintf(timetext, sizeof(timetext), "Time:%.1f/%.1f\nFPS:%d", GetMusicTimePlayed(bgm), GetMusicTimeLength(bgm), GetFPS());
+		std::snprintf(combotext, sizeof(combotext), "%d", GameState.GetHitNum());
+		std::snprintf(scoretext, sizeof(scoretext), "%07d", score);
 		DrawTextEx(Phifont_s, timetext, { 0.0f, 0.0f }, SH * 0.025f, 0.0f, WHITE);
 		DrawTextEx(Phifont_l, combotext, { (SW - MeasureTextEx(Phifont_l, combotext, SH * 0.075f, 0).x) / 2.0f, SH * 0.015f }, SH * 0.075f, 0.0f, WHITE);
 		DrawTextEx(Phifont_s, "COMBO", { (SW - MeasureTextEx(Phifont_s, "COMBO", SH * 0.025f, 0).x) / 2.0f, SH * 0.1f }, SH * 0.025f, 0.0f, WHITE);
