@@ -26,7 +26,9 @@ void HitEffect::Draw(float time)
 	float rt = time - hittime;
 	float size = (1.0f - powf((duration - rt) / duration, 3.0f)) * NW;
 	unsigned char alpha = fmaxf(0.0f, 255.0f * (duration - rt) / duration);
-	DrawRectangle(x - size / 2, y - size / 2, size, size, { 255, 204, 48, alpha });
+	//DrawRectangle(x - size / 2, y - size / 2, size, size, { 255, 204, 48, alpha });
+	Rectangle rec = { x - size / 2, y - size / 2, size, size };
+	DrawRectangleLinesEx(rec, NW * 0.1f, { 255, 204, 48, alpha });
 	//粒子
 	for (int i = 0; i < 4; i++)
 	{

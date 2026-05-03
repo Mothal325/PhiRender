@@ -156,7 +156,9 @@ int main(void)
 
 	SetTraceLogLevel(LOG_NONE);
 	InitWindow(SW, SH, "Mothal's Phigros Render");
-	Texture bg = LoadTexture(backgroundname.c_str());
+	Image bg_image = LoadImage(backgroundname.c_str());
+	ImageBlurGaussian(&bg_image, BLURSIZE);
+	Texture bg = LoadTextureFromImage(bg_image);
 	
 	Font Phifont_s = LoadFontEx("res/Phifont.ttf", SH * 0.025, NULL, 0);
 	Font Phifont_m = LoadFontEx("res/Phifont.ttf", SH * 0.05, NULL, 0);
@@ -243,7 +245,7 @@ int main(void)
 
 		ClearBackground(BLACK);
 		
-		DrawTexturePro(bg, { 0, 0, (float)bg.width, (float)bg.height }, { (SW - (float)SH / bg.height * bg.width) / 2, 0, (float)SH / bg.height * bg.width, SH }, { 0, 0 }, 0, {128, 128, 128, 255});
+		DrawTexturePro(bg, { 0, 0, (float)bg.width, (float)bg.height }, { (SW - (float)SH / bg.height * bg.width) / 2, 0, (float)SH / bg.height * bg.width, SH }, { 0, 0 }, 0, {BRIGHTNESS, BRIGHTNESS, BRIGHTNESS, 255});
 		float playtime = GetMusicTimePlayed(bgm);
 		for (int i = 0; i < data.lines.size(); i++)
 		{
