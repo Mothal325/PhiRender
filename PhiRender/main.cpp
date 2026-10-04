@@ -106,6 +106,10 @@ int main(void)
 		{
 			SeekMusicStream(bgm, playtime + 1.0f);
 		}
+		if (IsKeyPressed(KEY_LEFT))
+		{
+			SeekMusicStream(bgm, playtime - 1.0f); //???
+		}
 		SetMusicPitch(bgm, bgmspeed);
 		UpdateMusicStream(bgm);
 		GameState.Update(playtime, data.lines, EffectM, SoundM);

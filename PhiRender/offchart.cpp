@@ -295,40 +295,101 @@ void OFF::Blockdata::FindBlock(const BlockArea& block, float time)
 		state += 4;
 	}
 
-	float blockcx = (block.x1 + block.x2) * 0.5f * SW;
-	float blockcy = (block.y1 + block.y2) * 0.5f * SH;
-	float blockx = (block.x1 + block.x2) * 0.5f * SW;
-	float blocky = (block.y1 + block.y2) * 0.5f * SH;
-	float blockw = std::abs(block.x1 - block.x2) * SW;
-	float blockh = std::abs(block.y1 - block.y2) * SH;
+	float blockcx = (block.x1 + block.x2) * 0.5f;
+	float blockcy = (block.y1 + block.y2) * 0.5f;
+	float blockx = blockcx * SW;
+	float blocky = blockcy * SH;
+	float blockw = std::abs(block.x1 - block.x2);
+	float blockh = std::abs(block.y1 - block.y2);
+	
+	float sx = 1.0f, sy = 1.0f;
+	float lastsx = block.scaleEvents.empty() ? 1.0f : block.scaleEvents[0].x2;
+	float lastsy = block.scaleEvents.empty() ? 1.0f : block.scaleEvents[0].y2;
+	for (int i = 0; i < block.scaleEvents.size(); i++)
+	{
+		if (time < block.scaleEvents[i].time)
+		{
+			break;
+		}
+		float blocksx = 1.0f, blocksy = 1.0f;
+		float blockasx = blockcx, blockasy = blockcy;
+		if (time >= block.scaleEvents[i].time)
+		{
+			if (i == block.scaleEvents.size() - 1)
+			{
+				sx = block.scaleEvents[i].x2;
+				sy = block.scaleEvents[i].y2;
+				blocksx = block.scaleEvents[i].x2;
+				blocksy = block.scaleEvents[i].y2;
+			}
+			else if (time >= block.scaleEvents[i + 1].time)
+			{
+				blocksx = block.scaleEvents[i + 1].x2;
+				blocksy = block.scaleEvents[i + 1].y2;
+			}
+			else
+			{
+				float p = (time - block.scaleEvents[i].time) / (block.scaleEvents[i + 1].time - block.scaleEvents[i].time);
+				float xp = EaseTable(block.scaleEvents[i].easeType1, p);
+				float yp = EaseTable(block.scaleEvents[i].easeType2, p);
+				blocksx = block.scaleEvents[i].x2 * (1 - xp) + block.scaleEvents[i + 1].x2 * xp;
+				blocksy = block.scaleEvents[i].y2 * (1 - yp) + block.scaleEvents[i + 1].y2 * yp;
+				sx = block.scaleEvents[i].x2 * (1 - xp) + block.scaleEvents[i + 1].x2 * xp;
+				sy = block.scaleEvents[i].y2 * (1 - yp) + block.scaleEvents[i + 1].y2 * yp;
+			}
+		}
+		blockasx = block.scaleEvents[i].x1;
+		blockasy = block.scaleEvents[i].y1;
 
-	float blockr = 0.0f, blockarx = blockx / SW, blockary = blocky / SH;
-	float blockfr = block.rotateEvents.empty() ? 0.0f : block.rotateEvents[0].value;
+		blockx += (blockx - blockasx * SW) * (blocksx - lastsx) / (std::abs(lastsx) > 1e-6 ? lastsx : blocksx);
+		blocky += (blocky - blockasy * SH) * (blocksy - lastsy) / (std::abs(lastsy) > 1e-6 ? lastsy : blocksy);
+		
+		lastsx = blocksx;
+		lastsy = blocksy;
+	}
+	
+	float r = 0.0f;
+	float lastr = block.rotateEvents.empty() ? 0.0f : block.rotateEvents[0].value;
 	for (int i = 0; i < block.rotateEvents.size(); i++)
 	{
+		if (time < block.rotateEvents[i].time)
+		{
+			break;
+		}
+		float blockr = 0.0f;
+		float blockarx = blockcx, blockary = blockcy;
 		if (time >= block.rotateEvents[i].time)
 		{
 			if (i == block.rotateEvents.size() - 1)
 			{
+				r = block.rotateEvents[i].value;
 				blockr = block.rotateEvents[i].value;
-				blockarx = block.rotateEvents.size() > 1 ? block.rotateEvents[i - 1].x1 : block.rotateEvents[i].x1;
-				blockary = block.rotateEvents.size() > 1 ? block.rotateEvents[i - 1].y1 : block.rotateEvents[i].y1;
 			}
 			else if (time >= block.rotateEvents[i + 1].time)
 			{
-				continue;
+				blockr = block.rotateEvents[i + 1].value;
 			}
 			else
 			{
 				float p = (time - block.rotateEvents[i].time) / (block.rotateEvents[i + 1].time - block.rotateEvents[i].time);
 				float rp = EaseTable(block.rotateEvents[i].easeType1, p);
 				blockr = block.rotateEvents[i].value * (1 - rp) + block.rotateEvents[i + 1].value * rp;
-				blockarx = block.rotateEvents[i].x1;
-				blockary = block.rotateEvents[i].y1;
+				r = block.rotateEvents[i].value * (1 - rp) + block.rotateEvents[i + 1].value * rp;
 			}
 		}
+		blockarx = block.rotateEvents[i].x1;
+		blockary = block.rotateEvents[i].y1;
+
+		float theta = (blockr - lastr) / 180.0f * EASE_PI;
+		float ct = cos(theta), st = sin(theta);
+		float rdx = blockx - blockarx * SW;
+		float rdy = blocky - blockary * SH;
+		blockx += rdx * ct - rdy * st - rdx;
+		blocky += rdx * st + rdy * ct - rdy;
+		lastr = blockr;
 	}
-	float blockmx = blockcx / SW, blockmy = blockcy / SH;
+
+	float blockmx = blockcx, blockmy = blockcy;
 	for (int i = 0; i < block.moveEvents.size(); i++)
 	{
 		if (time >= block.moveEvents[i].time)
@@ -352,57 +413,15 @@ void OFF::Blockdata::FindBlock(const BlockArea& block, float time)
 			}
 		}
 	}
-	float blocksx = 1.0f, blocksy = 1.0f;
-	float blockasx = blockx / SW, blockasy = blocky / SH;
-	float blockfsx = block.scaleEvents.empty() ? 1.0f : block.scaleEvents[0].x2;
-	float blockfsy = block.scaleEvents.empty() ? 1.0f : block.scaleEvents[0].y2;
-	for (int i = 0; i < block.scaleEvents.size(); i++)
-	{
-		if (time >= block.scaleEvents[i].time)
-		{
-			if (i == block.scaleEvents.size() - 1)
-			{
-				blocksx = block.scaleEvents[i].x2;
-				blocksy = block.scaleEvents[i].y2;
-				blockasx = block.scaleEvents.size() > 1 ? block.scaleEvents[i - 1].x1 : block.scaleEvents[i].x1;
-				blockasy = block.scaleEvents.size() > 1 ? block.scaleEvents[i - 1].y1 : block.scaleEvents[i].y1;
-			}
-			else if (time >= block.scaleEvents[i + 1].time)
-			{
-				continue;
-			}
-			else
-			{
-				float p = (time - block.scaleEvents[i].time) / (block.scaleEvents[i + 1].time - block.scaleEvents[i].time);
-				float xp = EaseTable(block.scaleEvents[i].easeType1, p);
-				float yp = EaseTable(block.scaleEvents[i].easeType2, p);
-				blockasx = block.scaleEvents[i].x1;
-				blockasy = block.scaleEvents[i].y1;
-				blocksx = block.scaleEvents[i].x2 * (1 - xp) + block.scaleEvents[i + 1].x2 * xp;
-				blocksy = block.scaleEvents[i].y2 * (1 - yp) + block.scaleEvents[i + 1].y2 * yp;
-			}
-		}
-	}
-	
-	
-	blockx += (blockx - blockasx * SW) * (blocksx - blockfsx);
-	blocky += (blocky - blockasy * SH) * (blocksy - blockfsy);
 
-	float theta = (blockr - blockfr) / 180.0 * EASE_PI;
-	float ct = cos(theta), st = sin(theta);
-	float rdx = blockx - blockarx * SW;
-	float rdy = blocky - blockary * SH;
-	blockx += rdx * ct - rdy * st - rdx;
-	blocky += rdx * st + rdy * ct - rdy;
-
-	float mdx = blockmx * SW - blockcx;
-	float mdy = blockmy * SH - blockcy;
-	blockx += mdx;
-	blocky += mdy;
+	float mdx = blockmx - blockcx;
+	float mdy = blockmy - blockcy;
+	blockx += mdx * SW;
+	blocky += mdy * SH;
 	
 	x = blockx;
 	y = blocky;
-	w = blockw * std::abs(blocksx);
-	h = blockh * std::abs(blocksy);
-	rotation = blockr;
+	w = blockw * std::abs(sx) * SW;
+	h = blockh * std::abs(sy) * SH;
+	rotation = r;
 }

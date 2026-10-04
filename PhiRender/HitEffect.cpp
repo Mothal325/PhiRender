@@ -24,6 +24,10 @@ void HitEffect::Init(float Lx, float Ly, float Lr, float xPos, float time)
 void HitEffect::Draw(float time)
 {
 	float rt = time - hittime;
+	if (rt < 0)
+	{
+		return;
+	}
 	float size = (1.0f - powf((duration - rt) / duration, 3.0f)) * NW;
 	unsigned char alpha = fmaxf(0.0f, 255.0f * (duration - rt) / duration);
 	Rectangle rec = { x - size / 2, y - size / 2, size, size };
