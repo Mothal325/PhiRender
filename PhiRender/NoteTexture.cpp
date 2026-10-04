@@ -72,7 +72,6 @@ void NoteTexture::DrawHoldTexture(bool hit, bool ismh, float x, float y, float r
 		if (!hit)
 		{
 			DrawTexturePro(Thold, { 0, (float)Thold.height - holdAtlas[1], (float)Thold.width, (float)holdAtlas[1] }, { x, SH - y, NW, (float)holdAtlas[1] / (float)Thold.width * NW }, { NW / 2.0f, 0.0f }, r + 180.0 * updown, WHITE);
-
 		}
 	}
 }

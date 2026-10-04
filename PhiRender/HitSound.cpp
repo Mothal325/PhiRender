@@ -1,5 +1,6 @@
 ﻿#include "include\raylib.h"
 #include "offchart.h"
+#include "Constants.h"
 #include "HitSound.h"
 
 void HitSoundManager::Init(const OFF::Chartdata& data)
@@ -31,14 +32,14 @@ void HitSoundManager::Free(void)
 	UnloadSound(Sflick);
 }
 
-void HitSoundManager::SetHitSoundVolume(float volume)
+void HitSoundManager::SetHitSoundVolume(float volume) const
 {
 	SetSoundVolume(Sclick, volume);
 	SetSoundVolume(Sdrag, volume);
 	SetSoundVolume(Sflick, volume);
 }
 
-void HitSoundManager::PlayHitSound(int index)
+void HitSoundManager::PlayHitSound(int index) const
 {
 	PlaySound(Snotes[index]);
 }

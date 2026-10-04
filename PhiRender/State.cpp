@@ -10,6 +10,7 @@ void State::Init(const OFF::Chartdata& data)
 {
 	linedata.resize(data.lines.size());
 	notedata = OFF::ReadNotedata(data);
+	blockdata.resize(data.blockAreaList.size());
 	notenum = notedata.size();
 }
 
@@ -53,7 +54,7 @@ void State::Update(float time, const std::vector<OFF::judgeLine>& lines, HitEffe
 	EffectM.UpdateHoldHitEffect(linedata, time);
 }
 
-void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vector<OFF::Linedata>& data, float time, bool renderhold, NoteTexture& res)
+static void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vector<OFF::Linedata>& data, float time, bool renderhold, NoteTexture& res)
 {
 	for (int i = notedata.size() - 1; i >= 0; i--)
 	{
@@ -96,7 +97,7 @@ void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vector<OFF:
 	}
 }
 
-void DrawJudgeLine(const std::vector<OFF::Linedata>& data)
+static void DrawJudgeLine(const std::vector<OFF::Linedata>& data)
 {
 	for (auto& line : data)
 	{
@@ -106,10 +107,79 @@ void DrawJudgeLine(const std::vector<OFF::Linedata>& data)
 	}
 }
 
-void State::Draw(float time, NoteTexture& res)
+void State::UpdateBlock(float time, const std::vector<OFF::BlockArea>& blocks)
 {
-	DrawJudgeLine(linedata);
+	for (int i = 0; i < blockdata.size(); i++)
+	{
+		blockdata[i].FindBlock(blocks[i], time);
+	}
+}
 
+static void DrawBlockArea(const std::vector<OFF::Blockdata>& data, int mode) //0 -> pin, 1 -> pos & neg
+{
+	static RenderTexture2D canvaspos = LoadRenderTexture(SW, SH);
+	static RenderTexture2D canvasneg = LoadRenderTexture(SW, SH);
+	static RenderTexture2D canvaspin = LoadRenderTexture(SW, SH);
+
+	static Shader xorShader = LoadShader(nullptr, "xor.fs");
+	static int tex1Loc = GetShaderLocation(xorShader, "texture1");
+
+	if (mode == 0)
+	{
+		BeginTextureMode(canvaspin);
+		ClearBackground(BLANK);
+		for (int i = 0; i < data.size(); i++)
+		{
+			if (data[i].state == 0 || data[i].state == 2 || data[i].state == 6)
+			{
+				continue;
+			}
+			DrawRectanglePro({ data[i].x, data[i].y, data[i].w, data[i].h },
+				{ data[i].w / 2.0f, data[i].h / 2.0f }, data[i].rotation, { 255, 255, 64, 255 });
+		}
+		EndTextureMode();
+		DrawTexture(canvaspin.texture, 0, 0, { 255, 255, 255, 64 });
+	}
+	else
+	{
+		BeginTextureMode(canvaspos);
+		ClearBackground(BLANK);
+		for (int i = 0; i < data.size(); i++)
+		{
+			if (data[i].state != 2)
+			{
+				continue;
+			}
+			DrawRectanglePro({ data[i].x, data[i].y, data[i].w, data[i].h },
+				{ data[i].w / 2.0f, data[i].h / 2.0f }, data[i].rotation, { 255, 0, 0, 255 });
+		}
+		EndTextureMode();
+
+		BeginTextureMode(canvasneg);
+		ClearBackground(BLANK);
+		for (int i = 0; i < data.size(); i++)
+		{
+			if (data[i].state != 6)
+			{
+				continue;
+			}
+			DrawRectanglePro({ data[i].x, data[i].y, data[i].w, data[i].h },
+				{ data[i].w / 2.0f, data[i].h / 2.0f }, data[i].rotation, { 255, 0, 0, 255 });
+		}
+		EndTextureMode();
+
+		BeginShaderMode(xorShader);
+		SetShaderValueTexture(xorShader, tex1Loc, canvasneg.texture);
+		DrawTexture(canvaspos.texture, 0, 0, { 255, 255, 255, 255 });
+		EndShaderMode();
+	}
+}
+
+void State::Draw(float time, NoteTexture& res) const
+{
+	DrawBlockArea(blockdata, 0);
+	DrawJudgeLine(linedata);
 	DrawNote(notedata, linedata, time, 1, res);
 	DrawNote(notedata, linedata, time, 0, res);
+	DrawBlockArea(blockdata, 1);
 }

@@ -1,4 +1,5 @@
-﻿#include <iostream>
+﻿#include <cmath>
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <unordered_map>
@@ -6,10 +7,13 @@
 #include <vector>
 #include "offchart.h"
 
+#include "easeType.h"
+#include "Constants.h"
+
 using namespace OFF;
 using json = nlohmann::json;
 
-void Readnote(const json& data, std::vector<Note>& note)
+static void Readnote(const json& data, std::vector<Note>& note)
 {
 	for (int i = 0; i < data.size(); i++)
 	{
@@ -22,7 +26,7 @@ void Readnote(const json& data, std::vector<Note>& note)
 	}
 }
 
-void Readevent(const json& data, std::vector<Event>& event, int mode)	//mode: speed 0, move 1, another 2
+static void Readevent(const json& data, std::vector<Event>& event, int mode)	//mode: speed 0, move 1, another 2
 {
 	for (int i = 0; i < data.size(); i++)
 	{
@@ -45,7 +49,52 @@ void Readevent(const json& data, std::vector<Event>& event, int mode)	//mode: sp
 	}
 }
 
-void CalculateFloor(judgeLine& line)
+static void ReadBlockArea(const json& data, std::vector<BlockArea>& block)
+{
+	for (int i = 0; i < data.size(); i++)
+	{
+		block[i].x1 = data[i]["topRightPercentage"]["x"];
+		block[i].y1 = data[i]["topRightPercentage"]["y"];
+		block[i].x2 = data[i]["bottomLeftPercentage"]["x"];
+		block[i].y2 = data[i]["bottomLeftPercentage"]["y"];
+		block[i].appearTime = data[i]["appearTime"];
+		block[i].enableTime = data[i]["enableTime"];
+		block[i].disableTime = data[i]["disableTime"];
+		block[i].disappearTime = data[i]["disappearTime"];
+		block[i].isSubtract = data[i]["isSubtract"];
+		block[i].rotateEvents.resize(data[i]["rotateEvents"].size());
+		for (int j = 0; j < data[i]["rotateEvents"].size(); j++)
+		{
+			block[i].rotateEvents[j].x1 = data[i]["rotateEvents"][j]["anchor"]["x"];
+			block[i].rotateEvents[j].y1 = data[i]["rotateEvents"][j]["anchor"]["y"];
+			block[i].rotateEvents[j].time = data[i]["rotateEvents"][j]["time"];
+			block[i].rotateEvents[j].easeType1 = data[i]["rotateEvents"][j]["easeType"];
+			block[i].rotateEvents[j].value = data[i]["rotateEvents"][j]["rotation"];
+		}
+		block[i].moveEvents.resize(data[i]["moveEvents"].size());
+		for (int j = 0; j < data[i]["moveEvents"].size(); j++)
+		{
+			block[i].moveEvents[j].x1 = data[i]["moveEvents"][j]["endPosition"]["x"];
+			block[i].moveEvents[j].y1 = data[i]["moveEvents"][j]["endPosition"]["y"];
+			block[i].moveEvents[j].time = data[i]["moveEvents"][j]["time"];
+			block[i].moveEvents[j].easeType1 = data[i]["moveEvents"][j]["easeTypeX"];
+			block[i].moveEvents[j].easeType2 = data[i]["moveEvents"][j]["easeTypeY"];
+		}
+		block[i].scaleEvents.resize(data[i]["scaleEvents"].size());
+		for (int j = 0; j < data[i]["scaleEvents"].size(); j++)
+		{
+			block[i].scaleEvents[j].x1 = data[i]["scaleEvents"][j]["anchor"]["x"];
+			block[i].scaleEvents[j].y1 = data[i]["scaleEvents"][j]["anchor"]["y"];
+			block[i].scaleEvents[j].x2 = data[i]["scaleEvents"][j]["scale"]["x"];
+			block[i].scaleEvents[j].y2 = data[i]["scaleEvents"][j]["scale"]["y"];
+			block[i].scaleEvents[j].time = data[i]["scaleEvents"][j]["time"];
+			block[i].scaleEvents[j].easeType1 = data[i]["scaleEvents"][j]["easeTypeX"];
+			block[i].scaleEvents[j].easeType2 = data[i]["scaleEvents"][j]["easeTypeY"];
+		}
+	}
+}
+
+static void CalculateFloor(judgeLine& line)
 {
 	float s = 0.0, t = 0.0;
 	for (int i = 0; i < line.speedEvents.size(); i++)
@@ -122,7 +171,14 @@ void OFF::Chartdata::Readdata(std::string filename)
 		lines[i].disappearEvents.resize(jl["judgeLineDisappearEvents"].size());
 		Readevent(jl["judgeLineDisappearEvents"], lines[i].disappearEvents, 2);
 	}
-	std::cout << "event " << event_sum << " note " << note_sum << "\n";
+	if (data.contains("blockAreaList"))
+	{
+		std::cout << "event " << event_sum << " note " << note_sum << "\n";
+		//blockAreaList
+		std::cout << "blockAreaList " << data["blockAreaList"].size() << "\n";
+		blockAreaList.resize(data["blockAreaList"].size());
+		ReadBlockArea(data["blockAreaList"], blockAreaList);
+	}
 }
 
 void OFF::Linedata::FindLine(const judgeLine& line, float time)
@@ -184,7 +240,7 @@ std::vector<OFF::Notedata> OFF::ReadNotedata(const OFF::Chartdata& data)
 		for (int j = 0; j < aline.notesAbove.size(); j++)
 		{
 			OFF::Note anote = aline.notesAbove[j];
-			OFF::Notedata noted;
+			OFF::Notedata noted = {};
 			noted.note = anote;
 			noted.lineid = i;
 			noted.isAbove = true;
@@ -195,7 +251,7 @@ std::vector<OFF::Notedata> OFF::ReadNotedata(const OFF::Chartdata& data)
 		for (int j = 0; j < aline.notesBelow.size(); j++)
 		{
 			OFF::Note anote = aline.notesBelow[j];
-			OFF::Notedata noted;
+			OFF::Notedata noted = {};
 			noted.note = anote;
 			noted.lineid = i;
 			noted.isAbove = false;
@@ -213,4 +269,140 @@ std::vector<OFF::Notedata> OFF::ReadNotedata(const OFF::Chartdata& data)
 	}
 
 	return notedata;
+}
+
+void OFF::Blockdata::FindBlock(const BlockArea& block, float time)
+{
+	if (time < block.appearTime || time > block.disappearTime)
+	{
+		state = 0;
+		return;
+	}
+	else if (time < block.enableTime)
+	{
+		state = 1;
+	}
+	else if (time < block.disableTime)
+	{
+		state = 2;
+	}
+	else
+	{
+		state = 3;
+	}
+	if (block.isSubtract)
+	{
+		state += 4;
+	}
+
+	float blockcx = (block.x1 + block.x2) * 0.5f * SW;
+	float blockcy = (block.y1 + block.y2) * 0.5f * SH;
+	float blockx = (block.x1 + block.x2) * 0.5f * SW;
+	float blocky = (block.y1 + block.y2) * 0.5f * SH;
+	float blockw = std::abs(block.x1 - block.x2) * SW;
+	float blockh = std::abs(block.y1 - block.y2) * SH;
+
+	float blockr = 0.0f, blockarx = blockx / SW, blockary = blocky / SH;
+	float blockfr = block.rotateEvents.empty() ? 0.0f : block.rotateEvents[0].value;
+	for (int i = 0; i < block.rotateEvents.size(); i++)
+	{
+		if (time >= block.rotateEvents[i].time)
+		{
+			if (i == block.rotateEvents.size() - 1)
+			{
+				blockr = block.rotateEvents[i].value;
+				blockarx = block.rotateEvents.size() > 1 ? block.rotateEvents[i - 1].x1 : block.rotateEvents[i].x1;
+				blockary = block.rotateEvents.size() > 1 ? block.rotateEvents[i - 1].y1 : block.rotateEvents[i].y1;
+			}
+			else if (time >= block.rotateEvents[i + 1].time)
+			{
+				continue;
+			}
+			else
+			{
+				float p = (time - block.rotateEvents[i].time) / (block.rotateEvents[i + 1].time - block.rotateEvents[i].time);
+				float rp = EaseTable(block.rotateEvents[i].easeType1, p);
+				blockr = block.rotateEvents[i].value * (1 - rp) + block.rotateEvents[i + 1].value * rp;
+				blockarx = block.rotateEvents[i].x1;
+				blockary = block.rotateEvents[i].y1;
+			}
+		}
+	}
+	float blockmx = blockcx / SW, blockmy = blockcy / SH;
+	for (int i = 0; i < block.moveEvents.size(); i++)
+	{
+		if (time >= block.moveEvents[i].time)
+		{
+			if (i == block.moveEvents.size() - 1)
+			{
+				blockmx = block.moveEvents[i].x1;
+				blockmy = block.moveEvents[i].y1;
+			}
+			else if (time >= block.moveEvents[i + 1].time)
+			{
+				continue;
+			}
+			else
+			{
+				float p = (time - block.moveEvents[i].time) / (block.moveEvents[i + 1].time - block.moveEvents[i].time);
+				float xp = EaseTable(block.moveEvents[i].easeType1, p);
+				float yp = EaseTable(block.moveEvents[i].easeType2, p);
+				blockmx = block.moveEvents[i].x1 * (1 - xp) + block.moveEvents[i + 1].x1 * xp;
+				blockmy = block.moveEvents[i].y1 * (1 - yp) + block.moveEvents[i + 1].y1 * yp;
+			}
+		}
+	}
+	float blocksx = 1.0f, blocksy = 1.0f;
+	float blockasx = blockx / SW, blockasy = blocky / SH;
+	float blockfsx = block.scaleEvents.empty() ? 1.0f : block.scaleEvents[0].x2;
+	float blockfsy = block.scaleEvents.empty() ? 1.0f : block.scaleEvents[0].y2;
+	for (int i = 0; i < block.scaleEvents.size(); i++)
+	{
+		if (time >= block.scaleEvents[i].time)
+		{
+			if (i == block.scaleEvents.size() - 1)
+			{
+				blocksx = block.scaleEvents[i].x2;
+				blocksy = block.scaleEvents[i].y2;
+				blockasx = block.scaleEvents.size() > 1 ? block.scaleEvents[i - 1].x1 : block.scaleEvents[i].x1;
+				blockasy = block.scaleEvents.size() > 1 ? block.scaleEvents[i - 1].y1 : block.scaleEvents[i].y1;
+			}
+			else if (time >= block.scaleEvents[i + 1].time)
+			{
+				continue;
+			}
+			else
+			{
+				float p = (time - block.scaleEvents[i].time) / (block.scaleEvents[i + 1].time - block.scaleEvents[i].time);
+				float xp = EaseTable(block.scaleEvents[i].easeType1, p);
+				float yp = EaseTable(block.scaleEvents[i].easeType2, p);
+				blockasx = block.scaleEvents[i].x1;
+				blockasy = block.scaleEvents[i].y1;
+				blocksx = block.scaleEvents[i].x2 * (1 - xp) + block.scaleEvents[i + 1].x2 * xp;
+				blocksy = block.scaleEvents[i].y2 * (1 - yp) + block.scaleEvents[i + 1].y2 * yp;
+			}
+		}
+	}
+	
+	
+	blockx += (blockx - blockasx * SW) * (blocksx - blockfsx);
+	blocky += (blocky - blockasy * SH) * (blocksy - blockfsy);
+
+	float theta = (blockr - blockfr) / 180.0 * EASE_PI;
+	float ct = cos(theta), st = sin(theta);
+	float rdx = blockx - blockarx * SW;
+	float rdy = blocky - blockary * SH;
+	blockx += rdx * ct - rdy * st - rdx;
+	blocky += rdx * st + rdy * ct - rdy;
+
+	float mdx = blockmx * SW - blockcx;
+	float mdy = blockmy * SH - blockcy;
+	blockx += mdx;
+	blocky += mdy;
+	
+	x = blockx;
+	y = blocky;
+	w = blockw * std::abs(blocksx);
+	h = blockh * std::abs(blocksy);
+	rotation = blockr;
 }

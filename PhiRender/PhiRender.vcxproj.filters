@@ -53,5 +53,8 @@
     <ClInclude Include="NoteTexture.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="easeType.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -53,13 +53,13 @@ void HitEffectManager::AddEffect(const OFF::Linedata& line, const OFF::Notedata&
 	int i = note.lineid;
 	if (note.note.type == 3)
 	{
-		HoldingHold Hold;
+		HoldingHold Hold = {};
 		Hold.Init(note);
 		Holds.push_back(Hold);
 	}
 	else
 	{
-		HitEffect effect;
+		HitEffect effect = {};
 		effect.Init(line.x, line.y, line.r, note.note.positionX, note.note.time * OFF_T / line.bpm);
 		Effects.push_back(effect);
 	}
@@ -91,7 +91,7 @@ void HitEffectManager::UpdateHoldHitEffect(const std::vector<OFF::Linedata>& dat
 		}
 		if (time - hittime >= Hold.count * dt * 16)
 		{
-			HitEffect effect;
+			HitEffect effect = {};
 			effect.Init(data[i].x, data[i].y, data[i].r, Hold.positionX, time);
 			Effects.push_back(effect);
 			Hold.count++;

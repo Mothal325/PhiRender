@@ -6,8 +6,8 @@ struct HitSoundManager
 {
 	void Init(const OFF::Chartdata& data);
 	void Free(void);
-	void SetHitSoundVolume(float volume);
-	void PlayHitSound(int index);
+	void SetHitSoundVolume(float volume) const;
+	void PlayHitSound(int index) const;
 
 private:
 	Sound Sclick, Sdrag, Sflick;

@@ -28,6 +28,7 @@ int main(void)
 	std::getline(std::cin, backgroundname);
 
 	SetTraceLogLevel(LOG_NONE);
+	SetExitKey(KEY_NULL);
 	InitWindow(SW, SH, "Mothal's Phigros Render");
 
 	Image bg_image = LoadImage(backgroundname.c_str());
@@ -52,7 +53,8 @@ int main(void)
 	Font Phifont_l = LoadFontEx("res/Phifont.ttf", (int)(SH * 0.075), NULL, 0);
 
 	SetMusicVolume(bgm, 0.5f);
-	SetMusicPitch(bgm, BGMSPEED);
+	float bgmspeed = BGMSPEED;
+	SetMusicPitch(bgm, bgmspeed);
 	SetTextureFilter(bg, TEXTURE_FILTER_TRILINEAR);
 	
 	SetTargetFPS(FPS);
@@ -91,9 +93,23 @@ int main(void)
 			}
 		}
 
-		UpdateMusicStream(bgm);
 		float playtime = GetMusicTimePlayed(bgm);
+		if (IsKeyPressed(KEY_UP))
+		{
+			bgmspeed += 0.1f;
+		}
+		if (IsKeyPressed(KEY_DOWN))
+		{
+			bgmspeed -= 0.1f;
+		}
+		if (IsKeyPressed(KEY_RIGHT))
+		{
+			SeekMusicStream(bgm, playtime + 1.0f);
+		}
+		SetMusicPitch(bgm, bgmspeed);
+		UpdateMusicStream(bgm);
 		GameState.Update(playtime, data.lines, EffectM, SoundM);
+		GameState.UpdateBlock(playtime, data.blockAreaList);
 
 		BeginDrawing();
 
@@ -106,7 +122,7 @@ int main(void)
 
 		int score = (int)((double)GameState.GetHitNum() / GameState.GetNoteNum() * 1000000.0 + 0.5);
 
-		std::snprintf(timetext, sizeof(timetext), "Time:%.1f/%.1f\nFPS:%d", GetMusicTimePlayed(bgm), GetMusicTimeLength(bgm), GetFPS());
+		std::snprintf(timetext, sizeof(timetext), "Time:%.1f/%.1f(%.1fx)\nFPS:%d", GetMusicTimePlayed(bgm), GetMusicTimeLength(bgm), bgmspeed, GetFPS());
 		std::snprintf(combotext, sizeof(combotext), "%d", GameState.GetHitNum());
 		std::snprintf(scoretext, sizeof(scoretext), "%07d", score);
 		DrawTextEx(Phifont_s, timetext, { 0.0f, 0.0f }, SH * 0.025f, 0.0f, WHITE);
