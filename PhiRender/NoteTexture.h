@@ -6,8 +6,8 @@ struct NoteTexture
 	void LoadResource(void);
 	void UnloadResource(void);
 
-	void DrawNoteTexture(int type, bool ismh, float x, float y, float r);
-	void DrawHoldTexture(bool hit, bool ismh, float x, float y, float r, float length, int updown);
+	void DrawNoteTexture(int type, bool ismh, float x, float y, float r, float scale);
+	void DrawHoldTexture(bool hit, bool ismh, float x, float y, float r, float length, int updown, float scale);
 
 private:
 	Texture Tclick, Tclick_mh, Tdrag, Tdrag_mh, Tflick, Tflick_mh, Thold, Thold_mh;

@@ -6,6 +6,8 @@
 #include "HitSound.h"
 #include "State.h"
 
+#include "include/rlgl.h"
+
 void State::Init(const OFF::Chartdata& data)
 {
 	linedata.resize(data.lines.size());
@@ -77,13 +79,15 @@ static void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vect
 			{
 				ly = 0;
 			}
+			float dt = std::max(note.time - t, 0.0f);
+			float scale = 1.0f - std::pow(std::max(0.0f, (dt - 16.0f) / 32.0f), 2);
 			theta = data[id].r / 180.0 * PI;
 			x = std::cos(theta) * lx - std::sin(theta) * ly + data[id].x * SW;
 			y = std::sin(theta) * lx + std::cos(theta) * ly + data[id].y * SH;
 			float rotation = -data[id].r;
 			if (note.type != 3 && !renderhold)
 			{
-				res.DrawNoteTexture(note.type, notedata[i].ismh, x, y, rotation);
+				res.DrawNoteTexture(note.type, notedata[i].ismh, x, y, rotation, scale * 1.5f);
 			}
 			else if (note.type == 3 && note.speed != 0 && renderhold)
 			{
@@ -91,7 +95,7 @@ static void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vect
 				float remainlength = length;
 				if (note.time < t && t <= note.time + note.holdTime)
 					remainlength -= note.speed * (t - note.time) * OFF_T / data[id].bpm * OFF_Y * SH;
-				res.DrawHoldTexture(note.time <= t, notedata[i].ismh, x, y, rotation, remainlength, updown);
+				res.DrawHoldTexture(note.time <= t, notedata[i].ismh, x, y, rotation, remainlength, updown, scale * 1.5f);
 			}
 		}
 	}
@@ -117,12 +121,8 @@ void State::UpdateBlock(float time, const std::vector<OFF::BlockArea>& blocks)
 
 static void DrawBlockArea(const std::vector<OFF::Blockdata>& data, int mode) //0 -> pin, 1 -> pos & neg
 {
-	static RenderTexture2D canvaspos = LoadRenderTexture(SW, SH);
-	static RenderTexture2D canvasneg = LoadRenderTexture(SW, SH);
+	static RenderTexture2D canvas = LoadRenderTexture(SW, SH);
 	static RenderTexture2D canvaspin = LoadRenderTexture(SW, SH);
-
-	static Shader xorShader = LoadShader(nullptr, "xor.fs");
-	static int tex1Loc = GetShaderLocation(xorShader, "texture1");
 
 	if (mode == 0)
 	{
@@ -142,7 +142,7 @@ static void DrawBlockArea(const std::vector<OFF::Blockdata>& data, int mode) //0
 	}
 	else
 	{
-		BeginTextureMode(canvaspos);
+		BeginTextureMode(canvas);
 		ClearBackground(BLANK);
 		for (int i = 0; i < data.size(); i++)
 		{
@@ -153,10 +153,9 @@ static void DrawBlockArea(const std::vector<OFF::Blockdata>& data, int mode) //0
 			DrawRectanglePro({ data[i].x, data[i].y, data[i].w, data[i].h },
 				{ data[i].w / 2.0f, data[i].h / 2.0f }, data[i].rotation, { 255, 0, 0, 255 });
 		}
-		EndTextureMode();
 
-		BeginTextureMode(canvasneg);
-		ClearBackground(BLANK);
+		rlSetBlendFactors(RL_ONE_MINUS_DST_COLOR, RL_ONE_MINUS_SRC_COLOR, RL_FUNC_ADD);
+		BeginBlendMode(BLEND_CUSTOM);
 		for (int i = 0; i < data.size(); i++)
 		{
 			if (data[i].state != 6)
@@ -166,12 +165,10 @@ static void DrawBlockArea(const std::vector<OFF::Blockdata>& data, int mode) //0
 			DrawRectanglePro({ data[i].x, data[i].y, data[i].w, data[i].h },
 				{ data[i].w / 2.0f, data[i].h / 2.0f }, data[i].rotation, { 255, 0, 0, 255 });
 		}
+		EndBlendMode();
 		EndTextureMode();
 
-		BeginShaderMode(xorShader);
-		SetShaderValueTexture(xorShader, tex1Loc, canvasneg.texture);
-		DrawTexture(canvaspos.texture, 0, 0, { 255, 255, 255, 255 });
-		EndShaderMode();
+		DrawTexture(canvas.texture, 0, 0, { 255, 255, 255, 64 });
 	}
 }
 
