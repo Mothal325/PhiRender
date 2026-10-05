@@ -70,7 +70,7 @@ static void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vect
 			continue;
 		}
 		float d = note.floorPosition - data[id].f;
-		if (/*d > -0.002 &&*/ d < 2.0 / OFF_Y || t >= note.time && t < note.time + note.holdTime)
+		if (d > -0.002 && d < 2.0 / OFF_Y || t >= note.time && t < note.time + note.holdTime)
 		{
 			float x, y, lx, ly, theta;
 			lx = note.positionX * OFF_X * SW;
@@ -85,11 +85,11 @@ static void DrawNote(const std::vector<OFF::Notedata>& notedata, const std::vect
 			x = std::cos(theta) * lx - std::sin(theta) * ly + data[id].x * SW;
 			y = std::sin(theta) * lx + std::cos(theta) * ly + data[id].y * SH;
 			float rotation = -data[id].r;
-			if (note.type != 3 && !renderhold && dt < 48)
+			if (note.type != 3 && !renderhold)
 			{
 				res.DrawNoteTexture(note.type, notedata[i].ismh, x, y, rotation, scale * 1.5f);
 			}
-			else if (note.type == 3 && note.speed != 0 && renderhold && dt < 48)
+			else if (note.type == 3 && note.speed != 0 && renderhold)
 			{
 				float length = note.speed * note.holdTime * OFF_T / data[id].bpm * OFF_Y * SH;
 				float remainlength = length;
