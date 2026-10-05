@@ -13,7 +13,7 @@ void main() {
     bool inNeg = n > 0.5;
 
     if (inPos != inNeg) {
-        finalColor = vec4(0.6, 0.0, 0.0, 0.25);
+        finalColor = vec4(1.0, 0.0, 0.0, 1.0);
     } else {
         finalColor = vec4(0.0);
     }
