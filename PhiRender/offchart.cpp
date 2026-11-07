@@ -341,8 +341,8 @@ void OFF::Blockdata::FindBlock(const BlockArea& block, float time)
 		blockasx = block.scaleEvents[i].x1;
 		blockasy = block.scaleEvents[i].y1;
 
-		blockx += (blockx - blockasx * SW) * (std::abs(lastsx) > 1e-6 ? (blocksx - lastsx) / lastsx : 1.0f);
-		blocky += (blocky - blockasy * SH) * (std::abs(lastsy) > 1e-6 ? (blocksy - lastsy) / lastsy : 1.0f);
+		blockx += (blockx - blockasx * SW) * (std::abs(lastsx) > 1e-6 ? (blocksx - lastsx) / lastsx : 0.0f);
+		blocky += (blocky - blockasy * SH) * (std::abs(lastsy) > 1e-6 ? (blocksy - lastsy) / lastsy : 0.0f);
 		
 		lastsx = blocksx;
 		lastsy = blocksy;
