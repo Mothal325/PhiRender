@@ -149,6 +149,7 @@
     <ClInclude Include="easeType.h" />
     <ClInclude Include="HitEffect.h" />
     <ClInclude Include="HitSound.h" />
+    <ClInclude Include="MixMusic.h" />
     <ClInclude Include="offchart.h" />
     <ClInclude Include="NoteTexture.h" />
     <ClInclude Include="State.h" />

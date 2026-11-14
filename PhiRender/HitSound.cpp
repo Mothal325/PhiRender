@@ -34,9 +34,10 @@ void HitSoundManager::Free(void)
 
 void HitSoundManager::SetHitSoundVolume(float volume) const
 {
-	SetSoundVolume(Sclick, volume);
-	SetSoundVolume(Sdrag, volume);
-	SetSoundVolume(Sflick, volume);
+	for (auto& s : Snotes)
+	{
+		SetSoundVolume(s, volume);
+	}
 }
 
 void HitSoundManager::PlayHitSound(int index) const

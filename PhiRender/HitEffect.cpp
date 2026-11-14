@@ -54,6 +54,10 @@ void HoldingHold::Init(const OFF::Notedata& note)
 
 void HitEffectManager::AddEffect(const OFF::Linedata& line, const OFF::Notedata& note, float time)
 {
+	if ((note.note.time + note.note.holdTime) * OFF_T / line.bpm + HIT_EFFECT_DURATION < time)
+	{
+		return;
+	}
 	int i = note.lineid;
 	if (note.note.type == 3)
 	{

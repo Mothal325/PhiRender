@@ -32,6 +32,30 @@ void State::Reset(void)
 	hitnum = 0;
 }
 
+void State::TimeJump(float time, const std::vector<OFF::judgeLine>& lines, HitEffectManager& EffectM)
+{
+	Reset();
+	hitnum = 0;
+	for (int i = 0; i < linedata.size(); i++)
+	{
+		linedata[i].FindLine(lines[i], time);
+	}
+	for (int i = 0; i < notedata.size(); i++)
+	{
+		float t = time * lines[notedata[i].lineid].bpm / OFF_T;
+		if (notedata[i].note.time <= t && !notedata[i].isPlayed)
+		{
+			notedata[i].isPlayed = true;
+			EffectM.AddEffect(linedata[notedata[i].lineid], notedata[i], time);
+		}
+		if (notedata[i].note.time + notedata[i].note.holdTime < t)
+		{
+			hitnum++;
+		}
+	}
+	EffectM.UpdateHoldHitEffect(linedata, time);
+}
+
 void State::Update(float time, const std::vector<OFF::judgeLine>& lines, HitEffectManager& EffectM, HitSoundManager& SoundM)
 {
 	hitnum = 0;

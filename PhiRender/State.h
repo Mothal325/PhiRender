@@ -9,6 +9,7 @@ struct State
 {
 	void Init(const OFF::Chartdata& data);
 	void Reset(void);
+	void TimeJump(float time, const std::vector<OFF::judgeLine>& lines, HitEffectManager& EffectM);
 	void Update(float time, const std::vector<OFF::judgeLine>& lines, HitEffectManager& EffectM, HitSoundManager& SoundM);
 	void UpdateBlock(float time, const std::vector<OFF::BlockArea>& blocks);
 	void Draw(float time, NoteTexture& res) const;
